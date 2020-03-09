@@ -5,21 +5,23 @@ const double x_0 = 0.1;
 const double y_0 = 0.1;
 const long int max_time = 1000000;
 const double dt = 0.01;
+const double dh = 0.01; //Шаг векторного поля
 
 double x = x_0;
 double y = y_0;
-double y_prev = y_0;
+//double y_prev = y_0;
+double h = 0;
 long int t = 0;
-long int check = 0;
+//long int check = 0;
 
 double f1(const double x, const double y)
 {
-	return x - x * y - x * x;
+	return x - x * y;
 }
 
 double f2(const double x, const double y)
 {
-	return y * x - y * y;
+	return y * x - y;
 }
 
 void CountDxAndDy(const double x, const double y, const double dt, double &dx, double &dy)
@@ -47,16 +49,25 @@ int main()
 	f2out.open("C:\\Users\\stas2\\Desktop\\result\\result1.txt");//Enter your path
 	while(t < max_time)
 	{
+		if (!(t % 10000))
+		{
+			if (h >= 0.)
+				x = x_0 + h,
+				y = y_0 + h,
+				h += dh;
+		}
 		CountDxAndDy(x, y, dt, dx, dy);
 		x += dx;
 		y += dy;
-		if (x - dx < x_0 && x >= x_0)
-			check++;
-		if (!check % 2)
+		/*if (x - dx < x_0 && x >= x_0)
 		{
-			f2out << y_prev << '\t' << y <<  '\t' << check/2 << std::endl;
-			y_prev = y;
-		}
+			check++;
+			if (!(check % 2))
+			{
+				f2out << y_prev << '\t' << y << '\t' << check / 2 << std::endl;
+				y_prev = y;
+			}
+		}*/
 		f1out << x << '\t' << y << '\t' << t << std::endl;
 		t++;
 	}
