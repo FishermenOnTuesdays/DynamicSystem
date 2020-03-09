@@ -43,7 +43,7 @@ int main()
 	double dx, dy;
 	std::ofstream f1out;
 	std::ofstream f2out;
-	f1out.open("C:\\Users\\stas2\\Desktop\\result\\result0.txt");//Enter your path
+	f1out.open("C:\\Users\\stas2\\Desktop\\result\\result0.txt");//Введите свой путь
 	f2out.open("C:\\Users\\stas2\\Desktop\\result\\result1.txt");//Enter your path
 	while(t < max_time)
 	{
