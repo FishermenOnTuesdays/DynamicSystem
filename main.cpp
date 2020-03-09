@@ -1,4 +1,4 @@
-#include<iostream>
+﻿#include<iostream>
 #include<fstream>
 
 const double x_0 = 0.1;
