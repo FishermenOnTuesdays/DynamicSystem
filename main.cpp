@@ -11,7 +11,7 @@ typedef std::complex<long double> complex;
 
 const double x_0 = 0.1;
 const double y_0 = 0.1;
-const long int max_time = 10;
+long int max_time = 10;
 const double dt = 0.01;
 const double dh = 0; //Шаг векторного поля
 const double E1 = 0.1;
@@ -331,6 +331,7 @@ int main()
 	for (size_t i = 0; i < N; i++)
 		std::cin >> var[i];
 	std::vector<std::vector<long double>> dots;
+	std::cin >> max_time;
 	while(t < max_time)
 	{
 		/*if (t % 10 == 0)
