@@ -11,13 +11,13 @@ typedef std::complex<long double> complex;
 
 const double x_0 = 0.1;
 const double y_0 = 0.1;
-const long int max_time = 100;
-const double dt = 0.0001;
+const long int max_time = 10;
+const double dt = 0.01;
 const double dh = 0; //Шаг векторного поля
 const double E1 = 0.1;
 const double E2 = 0.1;
 
-std::vector<std::string> functions = { "-x1*x1","-150*x2*x2"};
+std::vector<std::string> functions/* = { "-x1*x1","10*x2*x2"}*/;
 
 
 double x = x_0;
@@ -277,11 +277,11 @@ int main()
 {
 	//double dx, dy;
 	std::ofstream f1out;
-	std::ofstream f2out;
-	f1out.open("C:\\Users\\stas2\\Desktop\\result\\result0.txt");//Введите свой путь
-	f2out.open("C:\\Users\\stas2\\Desktop\\result\\result1.txt");//Enter your path
-	std::vector<long double> var(functions.size(), 0.1);
-	var[1] = 0.001;
+	//std::ofstream f2out;
+	f1out.open("../res/result.csv");//Введите свой путь
+	//f2out.open("C:\\Users\\stas2\\Desktop\\result\\result1.txt");//Enter your path
+	/*std::vector<long double> var(functions.size(), 0.1);
+	var[1] = 0.9;
 	matrix_double jacobian_matrix = GetJacobianMatrix(var, functions);
 	matrix_double inverse_matrix = MatrixInverse(jacobian_matrix);
 	std::vector<complex> complex_vec;
@@ -314,8 +314,23 @@ int main()
 	for (auto el : result)
 		std::cout << el << '\t';
 
-	std::cout << "\nDeterminant: " << Determinant(jacobian_matrix) << '\n';
+	std::cout << "\nDeterminant: " << Determinant(jacobian_matrix) << '\n';*/
 
+	std::vector<long double> var;
+	size_t N;
+	std::cin >> N;
+	for (size_t i = 1; i <= N; i++)
+	{
+		f1out << 'x' + std::to_string(i) + ',';
+	}
+	f1out << "t\n";
+	functions.resize(N);
+	for (size_t i = 0; i < N; i++)
+		std::cin >> functions[i];
+	var.resize(N);
+	for (size_t i = 0; i < N; i++)
+		std::cin >> var[i];
+	std::vector<std::vector<long double>> dots;
 	while(t < max_time)
 	{
 		/*if (t % 10 == 0)
@@ -332,7 +347,13 @@ int main()
 		//CountDxAndDy(x, y, dt, dx, dy, IsHard(x,y));
 		//x += dx;
 		//y += dy;
-		std::cout << "Time:" << t << ", (x;y)=(" << var[0]  << ';' << var[1] << "), Hard: " <<  IsHard(var) << std::endl;
+		dots.push_back(var);
+		for (size_t i = 0; i < var.size(); i++)
+		{
+			f1out << std::to_string(var[i])+',';
+		}
+		f1out << std::to_string(t * dt)+'\n';
+		//std::cout << "Time:" << t << ", (x;y)=(" << var[0]  << ';' << var[1] << "), Hard: " <<  IsHard(var) << std::endl;
 		var = CountNextCoor(var, functions, dt);
 		/*if (x - dx < x_0 && x >= x_0)
 		{
@@ -345,4 +366,6 @@ int main()
 		}*/
 		t++;
 	}
+	f1out.close();
+	std::cout << "result.csv";
 }

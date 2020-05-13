@@ -2,6 +2,7 @@
 #include<complex>
 #include<vector>
 #include<functional>
+#include<omp.h>
 
 namespace FindCR
 {
@@ -55,10 +56,11 @@ namespace FindCR
 			}
 			else
 			{
-				FindRoots(radius_square / 2, epsilon, x0 + radius_square / 2, y0 - radius_square / 2, roots, f, d, d_a);
-				FindRoots(radius_square / 2, epsilon, x0 - radius_square / 2, y0 + radius_square / 2, roots, f, d, d_a);
-				FindRoots(radius_square / 2, epsilon, x0 + radius_square / 2, y0 + radius_square / 2, roots, f, d, d_a);
-				FindRoots(radius_square / 2, epsilon, x0 - radius_square / 2, y0 - radius_square / 2, roots, f, d, d_a);
+				FindRoots(radius_square / 2, epsilon, x0 + radius_square / 2, y0 - radius_square / 2, roots, f, d, d_a); 
+				FindRoots(radius_square / 2, epsilon, x0 - radius_square / 2, y0 + radius_square / 2, roots, f, d, d_a); 
+				FindRoots(radius_square / 2, epsilon, x0 + radius_square / 2, y0 + radius_square / 2, roots, f, d, d_a); 
+				FindRoots(radius_square / 2, epsilon, x0 - radius_square / 2, y0 - radius_square / 2, roots, f, d, d_a); 
+				
 			}
 		}
 	}
