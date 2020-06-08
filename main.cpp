@@ -3,8 +3,8 @@
 #include<algorithm>
 #include<vector>
 #include<complex>
-#include"fparser.hh"
-#include"FindComplexRoots.h"
+#include "fparser.hh"
+#include "Eigen/Dense"
 
 typedef std::vector<std::vector<long double>> matrix_double;
 typedef std::complex<long double> complex;
@@ -22,10 +22,18 @@ std::vector<std::string> functions/* = { "-x1*x1","10*x2*x2"}*/;
 
 double x = x_0;
 double y = y_0;
-//double y_prev = y_0;
 double h = 0;
-long int t = 0;
-//long int check = 0;
+long int t = 0;																	
+
+bool Equal(const std::vector<long double>& vec1, const std::vector<long double>& vec2, const long double eps = 0.000001)
+{
+	if (vec1.size() != vec2.size())
+		return false;
+	for (size_t i = 0; i < vec1.size(); i++)
+		if (fabsl(vec1[i] - vec2[i]) > eps)
+			return false;
+	return true;
+}
 
 std::string GetVariables(const std::vector<std::string>& functions)
 {
@@ -36,7 +44,7 @@ std::string GetVariables(const std::vector<std::string>& functions)
 	return variables;
 }
 
-matrix_double GetJacobianMatrix(const std::vector<long double>& coor, const std::vector<std::string>& functions, const long double eps = 0.0001)
+matrix_double GetJacobianMatrix(const std::vector<long double>& coor, const std::vector<std::string>& functions, const long double eps = 0.000001)
 {
 	FunctionParser fp;
 	matrix_double return_matrix{ functions.size(), std::vector<long double>(functions.size()) };
@@ -163,17 +171,20 @@ complex CharacteristicEquation(const complex& z, const matrix_double& curr_matri
 	return Determinant(new_matrix);
 }
 
-bool IsHard(const std::vector<long double>& coor, const long double eps = 0.0001)
+bool IsHard(const std::vector<long double>& coor, const long double eps = 0.000001)
 {
 	matrix_double jacobian_matrix = GetJacobianMatrix(coor, functions);
-	std::vector<complex> eigenvalues;
-	FindCR::FindRoots(sqrt(GetNorm(jacobian_matrix)), eps, 0, 0, eigenvalues, [jacobian_matrix](complex z) { return CharacteristicEquation(z, jacobian_matrix); });
+	Eigen::MatrixXd jacobian_matrix_new(jacobian_matrix.size(), jacobian_matrix.size());
+	for (size_t i = 0; i < jacobian_matrix.size(); i++)
+		for (size_t j = 0; j < jacobian_matrix.size(); j++)
+			jacobian_matrix_new(i, j) = jacobian_matrix[i][j];
+	auto eigenvalues = jacobian_matrix_new.eigenvalues();
 	std::vector<long double> abs_eigenvalues;
-	for (auto el : eigenvalues)
+	for (size_t i = 0; i < eigenvalues.size(); i++)
 	{
-		if (std::abs(el) < eps)
+		if (std::abs(eigenvalues[i]) < eps)
 			return true;
-		abs_eigenvalues.push_back(std::abs(el));
+		abs_eigenvalues.push_back(std::abs(eigenvalues[i]));
 	}
 	if (*std::max_element(abs_eigenvalues.begin(), abs_eigenvalues.end()) / *std::min_element(abs_eigenvalues.begin(), abs_eigenvalues.end()) > 100)
 		return true;
@@ -275,47 +286,8 @@ std::vector<long double> CountNextCoor(const std::vector<long double>& coor, con
 
 int main()
 {
-	//double dx, dy;
 	std::ofstream f1out;
-	//std::ofstream f2out;
 	f1out.open("../res/result.csv");//Введите свой путь
-	//f2out.open("C:\\Users\\stas2\\Desktop\\result\\result1.txt");//Enter your path
-	/*std::vector<long double> var(functions.size(), 0.1);
-	var[1] = 0.9;
-	matrix_double jacobian_matrix = GetJacobianMatrix(var, functions);
-	matrix_double inverse_matrix = MatrixInverse(jacobian_matrix);
-	std::vector<complex> complex_vec;
-	FindCR::FindRoots(sqrt(GetNorm(jacobian_matrix)), 0.0001, 0, 0, complex_vec, [jacobian_matrix](complex z) { return CharacteristicEquation(z, jacobian_matrix); });
-	for (auto el : complex_vec)
-		std::cout << el << '\t';
-	std::cout << '\n';
-	for (size_t i = 0; i < jacobian_matrix.size(); i++)
-	{
-		for (size_t j = 0; j < jacobian_matrix[i].size(); j++)
-		{
-			std::cout << jacobian_matrix[i][j] << '\t';
-		}
-		std::cout << '\n';
-	}
-	std::cout << "Inverse:\n";
-	for (size_t i = 0; i < inverse_matrix.size(); i++)
-	{
-		for (size_t j = 0; j < inverse_matrix[i].size(); j++)
-		{
-			std::cout << inverse_matrix[i][j] << '\t';
-		}
-		std::cout << '\n';
-	}
-	std::cout << "Hard: " << bool(IsHard(var)) << '\n';
-	std::cout << "Dot: " << Dot(jacobian_matrix[0], jacobian_matrix[1]) << '\n';
-
-	std::vector<long double> result = CountNextCoor(var, functions, dt);
-
-	for (auto el : result)
-		std::cout << el << '\t';
-
-	std::cout << "\nDeterminant: " << Determinant(jacobian_matrix) << '\n';*/
-
 	std::vector<long double> var;
 	size_t N;
 	std::cin >> N;
@@ -334,37 +306,13 @@ int main()
 	std::cin >> max_time;
 	while(t < max_time)
 	{
-		/*if (t % 10 == 0)
-		{
-			f1out << x << '\t' << y << '\t' << t / 10 << std::endl;
-		}
-		if (!(t % 10000))
-		{
-			if (h >= 0.)
-				x = x_0 + h,
-				y = y_0 + h,
-				h += dh;
-		}*/
-		//CountDxAndDy(x, y, dt, dx, dy, IsHard(x,y));
-		//x += dx;
-		//y += dy;
 		dots.push_back(var);
 		for (size_t i = 0; i < var.size(); i++)
 		{
 			f1out << std::to_string(var[i])+',';
 		}
 		f1out << std::to_string(t * dt)+'\n';
-		//std::cout << "Time:" << t << ", (x;y)=(" << var[0]  << ';' << var[1] << "), Hard: " <<  IsHard(var) << std::endl;
 		var = CountNextCoor(var, functions, dt);
-		/*if (x - dx < x_0 && x >= x_0)
-		{
-			check++;
-			if (!(check % 2))
-			{
-				f2out << y_prev << '\t' << y << '\t' << check / 2 << std::endl;
-				y_prev = y;
-			}
-		}*/
 		t++;
 	}
 	f1out.close();
