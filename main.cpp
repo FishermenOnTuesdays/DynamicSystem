@@ -355,19 +355,13 @@ void CountLogSum(std::vector<long double>& log_sum, const Eigen::MatrixXd& matri
 {
 	Eigen::HouseholderQR<Eigen::MatrixXd> qr(matrix_deviation);
 	Eigen::MatrixXd orthonormal_matrix_deviation = qr.householderQ();
-	//std::cout << "Deviation:\n" << matrix_deviation << std::endl;
-	//std::cout << "Orthonormal:\n" << orthonormal_matrix_deviation << std::endl;
 	for (size_t i = 0; i < N; i++)
 	{
 		Eigen::VectorXd current_row = matrix_deviation.row(i);
-		//std::cout << "Row " << i << " : " << matrix_deviation.row(i) << std::endl;
 		for (size_t j = 0; j < i; j++)
 		{
-			//std::cout << "Dot deviation_row " << i << " and orthonormal_row " << j << " : " << matrix_deviation.row(i).dot(orthonormal_matrix_deviation.row(j)) << std::endl;
 			current_row -= matrix_deviation.row(i).dot(orthonormal_matrix_deviation.row(j)) * orthonormal_matrix_deviation.row(j);
-			//std::cout << "Current row: " << current_row << std::endl;
 		}
-		//std::cout << "Current norm: " << current_row.norm() << std::endl;
 		log_sum[i] += std::logl(current_row.norm());
 	}
 }
@@ -400,7 +394,7 @@ int main()
 {
 	std::ofstream f1out, f2out;
 	f1out.open("../wwwroot/output/result.csv");//Введите свой путь
-	f2out.open("../wwwroot/output/laypunov.csv");//Введите свой путь
+	//f2out.open("../wwwroot/output/laypunov.csv");//Введите свой путь
 	std::vector<long double> var;
 	#ifdef _DEBUG
 		N = 3;
@@ -409,12 +403,13 @@ int main()
 	#endif
 	for (size_t i = 1; i <= N; i++)
 		f1out << 'x' + std::to_string(i) + ',';
-	for (size_t i = 1; i <= N; i++)
+	f1out << "t,";
+	for (size_t i = 1; i <= N-1; i++)
 		f1out << 'l' + std::to_string(i) + ',';
-	f1out << "t\n";
+	f1out << 'l' + std::to_string(N) + '\n';
 	functions.resize(N);
 	#ifdef _DEBUG
-		functions = fixed_point;
+		functions = Lorenz_attractor;
 	#else
 		for (size_t i = 0; i < N; i++)
 			std::cin >> functions[i];
@@ -438,7 +433,10 @@ int main()
 			f1out << std::to_string(var[i])+',';
 		}
 		var = CountNextCoor(var, functions, dt);
-		f1out << std::to_string(t * dt) + '\n';
+		f1out << std::to_string(t * dt);
+		for (size_t i = 0; i < N; i++)
+			f1out << ',';
+		f1out << '\n';
 		t++;
 	}
 
@@ -447,8 +445,8 @@ int main()
 		std::cout << var[i] << ", ";
 	std::cout << "\nGOOD\n";*/
 
-	long int M = 100000;
-	long int T = 100;
+	long int M = 10000;
+	long int T = 10;
 	long double eps_deviation = 1;
 	std::vector<long double> deviation_x(var.size(), 0);
 	deviation_x[0] = eps_deviation;
@@ -478,9 +476,20 @@ int main()
 		for (size_t j = 0; j < N; j++)
 			for (size_t k = 0; k < N; k++)
 				var_deviation[j][k] = var[k] + deviation(j, k);
-		for (size_t j = 0; j < N; j++)
-			f2out << log_sum[j]/i/T << ",";
-		f2out << std::endl;
+		if (i != 0)
+		{
+			for (size_t j = 0; j < N; j++)
+			{
+				f1out << ',';
+			}
+			f1out << i << ',';
+			for (size_t j = 0; j < N; j++)
+				if (j != N - 1)
+					f1out << log_sum[j] / i / T << ",";
+				else
+					f1out << log_sum[j] / i / T;
+			f1out << std::endl;
+		}
 	}
 	f1out.close();
 }
