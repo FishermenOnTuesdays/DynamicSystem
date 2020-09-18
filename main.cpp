@@ -6,6 +6,7 @@
 #include<cmath>
 #include "fparser.hh"
 #include "Eigen/Dense"
+#include "eigen-3.3.7/unsupported/Eigen/MatrixFunctions"
 
 typedef std::vector<std::vector<long double>> matrix_double;
 typedef std::complex<long double> complex;
@@ -18,7 +19,7 @@ const double dh = 0; //Шаг векторного поля
 const double E1 = 0.1;
 const double E2 = 0.1;
 const std::vector<std::string> Lorenz_attractor = { "10*(x2-x1)", "x1*(28-x3)-x2", "x1*x2-(8/3)*x3" };
-//const std::vector<std::string>  = {"10*(x2-x1)", "28*x1-x2-x1*x3-x1*x3"};
+const std::vector<std::string> linear = {"-x1", "-2*x2", "-3*x3"};
 const std::vector<std::string> fixed_point = { "-x3", "-x1", "-x2" };
 
 size_t N;
@@ -107,6 +108,19 @@ matrix_double GetJacobianMatrix(const std::vector<long double>& coor, const std:
 		}
 	}
 	return return_matrix;
+}
+
+namespace Eigen
+{
+	Eigen::MatrixXd GetJacobianMatrix(const std::vector<long double>& coor, const std::vector<std::string>& functions, const long double eps = 0.000001)
+	{
+		auto jacobian_matrix = ::GetJacobianMatrix(coor, functions);
+		Eigen::MatrixXd jacobian_matrix_eigen(N,N);
+		for (size_t i = 0; i < N; i++)
+			for (size_t j = 0; j < N; j++)
+				jacobian_matrix_eigen(i, j) = jacobian_matrix[i][j];
+		return jacobian_matrix_eigen;
+	}
 }
 
 long double GetNorm(const matrix_double& curr_matrix)
@@ -351,10 +365,11 @@ std::vector<long double> CountNextCoor(const std::vector<long double>& coor, con
 	dy = dt / 6 * (k1_y + 2 * k2_y + 2 * k3_y + k4_y);*/
 }
 
-void CountLogSum(std::vector<long double>& log_sum, const Eigen::MatrixXd& matrix_deviation)
+void CountLogSum(std::vector<long double>& log_sum, const Eigen::MatrixXd& matrix_deviation, const double eps_deviation)
 {
 	Eigen::HouseholderQR<Eigen::MatrixXd> qr(matrix_deviation);
 	Eigen::MatrixXd orthonormal_matrix_deviation = qr.householderQ();
+	//orthonormal_matrix_deviation *= eps_deviation;
 	for (size_t i = 0; i < N; i++)
 	{
 		Eigen::VectorXd current_row = matrix_deviation.row(i);
@@ -390,11 +405,35 @@ void CountDeviation(Eigen::MatrixXd& deviation, const matrix_double& var_deviati
 			deviation(i, j) = var_deviation[i][j] - var[j];
 }
 
+namespace Eigen
+{
+	MatrixXd Orthogonalize(MatrixXd matrix)
+	{
+		for (size_t i = 0; i < matrix.cols(); i++)
+		{
+			for (size_t j = 0; j < i; j++)
+			{
+				matrix.col(i) -= matrix.col(i).dot(matrix.col(j) / matrix.col(j).norm()) * matrix.col(j) / matrix.col(j).norm();
+			}
+		}
+		return matrix;
+	}
+
+	MatrixXd Normalize(MatrixXd matrix)
+	{
+		for (size_t i = 0; i < matrix.cols(); i++)
+		{
+			matrix.col(i).normalize();
+		}
+		return matrix;
+	}
+}
+
 int main()
 {
 	std::ofstream f1out, f2out;
 	f1out.open("../wwwroot/output/result.csv");//Введите свой путь
-	//f2out.open("../wwwroot/output/laypunov.csv");//Введите свой путь
+	f2out.open("../wwwroot/output/laypunov.csv");//Введите свой путь
 	std::vector<long double> var;
 	#ifdef _DEBUG
 		N = 3;
@@ -409,7 +448,7 @@ int main()
 	f1out << 'l' + std::to_string(N) + '\n';
 	functions.resize(N);
 	#ifdef _DEBUG
-		functions = Lorenz_attractor;
+		functions = linear;
 	#else
 		for (size_t i = 0; i < N; i++)
 			std::cin >> functions[i];
@@ -444,52 +483,124 @@ int main()
 	for (size_t i = 0; i < N; i++)
 		std::cout << var[i] << ", ";
 	std::cout << "\nGOOD\n";*/
-
-	long int M = 10000;
+	long int M = 2000;
 	long int T = 10;
 	long double eps_deviation = 1;
-	std::vector<long double> deviation_x(var.size(), 0);
-	deviation_x[0] = eps_deviation;
-	std::vector<long double> deviation_y(var.size(), 0);
-	deviation_y[1] = eps_deviation;
-	std::vector<long double> var_deviation_x = Add(var, deviation_x);
-	std::vector<long double> var_deviation_y = Add(var, deviation_y);
-	long double log_sum_x = 0, log_sum_y = 0;
-	Eigen::MatrixXd deviation = Eigen::MatrixXd::Identity(N,N);
-	matrix_double var_deviation{ N, std::vector<long double>(N) };
-	for (size_t i = 0; i < N; i++)
+	//std::vector<long double> deviation_x(var.size(), 0);
+	//deviation_x[0] = eps_deviation;
+	//std::vector<long double> deviation_y(var.size(), 0);
+	//deviation_y[1] = eps_deviation;
+	//std::vector<long double> var_deviation_x = Add(var, deviation_x);
+	//std::vector<long double> var_deviation_y = Add(var, deviation_y);
+	long double log_sum_x = 0, log_sum_y = 0, log_sum_z = 0;
+	//Eigen::MatrixXd deviation = Eigen::MatrixXd::Identity(N,N);
+	//deviation *= eps_deviation;
+	//matrix_double var_deviation{ N, std::vector<long double>(N) };
+	/*for (size_t i = 0; i < N; i++)
 		for (size_t j = 0; j < N; j++)
-			var_deviation[i][j] = var[j] + deviation(i, j);
+			var_deviation[i][j] = var[j] + deviation(i, j);*/
 	std::vector<long double> log_sum(N, 0);
+
+	//Eigen::MatrixXd Y = Eigen::MatrixXd::Identity(N,N);
+	//Eigen::VectorXd x_deviation(N);
+	Eigen::MatrixXd deviation = Eigen::MatrixXd::Zero(N,N);
+	for (size_t i = 0; i < N; i++)
+		deviation(i, i) = eps_deviation;
+	/*deviation(0, 0) = 10 * (var[1] - var[0]);
+	deviation(1, 0) = 28 * var[0] - var[1] - var[0] * var[2];
+	deviation(2, 0) = -8 / 3 * var[2] + var[0] * var[1];
+	deviation(1, 1) = 1;
+	deviation(2, 2) = 1;*/
+	//deviation = Eigen::Orthogonalize(deviation);
+	//deviation = Eigen::Normalize(deviation);
+	/*std::cout << Eigen::Orthogonalize(deviation).col(0).norm() << std::endl;*/
 	
 	for (long unsigned int i = 0; i < M; i++)
 	{
+		//Y += Eigen::GetJacobianMatrix(var, functions) * Y * dt;
+		//deviation += Eigen::GetJacobianMatrix(var, functions) * deviation * dt;
+		//std::cout << deviation.row(0).dot(deviation.row(1)) << deviation.row(1).dot(deviation.row(2)) << deviation.row(2).dot(deviation.row(0)) << std::endl;
+		//Eigen::MatrixXd Jacobian_Matrix = Eigen::GetJacobianMatrix(var,functions);
 		for (long unsigned int j = 0; j < T; j++)
 		{
-			CountNextCoorDeviation(var_deviation, functions, dt);
+			//CountNextCoorDeviation(var_deviation, functions, dt);
 			var = CountNextCoor(var, functions, dt);
-		}
-		CountDeviation(deviation, var_deviation, var);
-		CountLogSum(log_sum, deviation);
-		Eigen::HouseholderQR<Eigen::MatrixXd> qr(deviation);
-		deviation = qr.householderQ();
-		for (size_t j = 0; j < N; j++)
-			for (size_t k = 0; k < N; k++)
-				var_deviation[j][k] = var[k] + deviation(j, k);
-		if (i != 0)
-		{
-			for (size_t j = 0; j < N; j++)
+			Eigen::MatrixXd j_m = Eigen::GetJacobianMatrix(var, functions);
+			for (size_t v = 0; v < N; v++)
 			{
-				f1out << ',';
+				std::vector<long double> curr(N);
+				for (size_t k = 0; k < N; k++)
+				{
+					curr[k] = deviation(k, v);
+				}
+				curr = CountNextCoor(curr, { std::to_string(j_m(0,0)) + "*x1+" + std::to_string(j_m(0,1)) + "*x2+" + std::to_string(j_m(0,2)) + "*x3",
+													   std::to_string(j_m(1,0)) + "*x1+" + std::to_string(j_m(1,1)) + "*x2+" + std::to_string(j_m(1,2)) + "*x3",
+													   std::to_string(j_m(2,0)) + "*x1+" + std::to_string(j_m(2,1)) + "*x2+" + std::to_string(j_m(2,2)) + "*x3" }, dt);
+				for (size_t k = 0; k < N; k++)
+				{
+					deviation(k, v) = curr[k];
+				}
 			}
-			f1out << i << ',';
-			for (size_t j = 0; j < N; j++)
-				if (j != N - 1)
-					f1out << log_sum[j] / i / T << ",";
-				else
-					f1out << log_sum[j] / i / T;
-			f1out << std::endl;
+			//deviation += Eigen::GetJacobianMatrix(var, functions) * deviation * dt;
 		}
+
+		deviation = Eigen::Orthogonalize(deviation);
+
+		for (size_t i = 0; i < N; i++)
+			log_sum[i] += logl(deviation.col(i).norm() / eps_deviation);
+
+		deviation = Eigen::Normalize(deviation);
+		/*std::cout << deviation << std::endl;
+		Eigen::HouseholderQR<Eigen::MatrixXd> qr(deviation);
+		Eigen::MatrixXd Q = qr.householderQ();
+		std::cout << "Norms:\n";
+		std::cout << Q.col(0).norm() << '\n' << Q.col(1).norm() << '\n' << Q.col(2).norm() << '\n';*/
+
+		/*log_sum_x += logl(deviation.col(0).norm() / eps_deviation);
+		deviation.col(0) = deviation.col(0) * eps_deviation / deviation.col(0).norm();
+		deviation.col(1) = deviation.col(1) - deviation.col(1).dot(deviation.col(0)) * deviation.col(0);
+		log_sum_y += logl(deviation.col(1).norm() / eps_deviation);
+		deviation.col(1) = deviation.col(1) * eps_deviation / deviation.col(1).norm();
+		deviation.col(2) = deviation.col(2) - deviation.col(2).dot(deviation.col(0)) * deviation.col(0) - deviation.col(2).dot(deviation.col(1)) * deviation.col(1);
+		log_sum_z += logl(deviation.col(2).norm() / eps_deviation);
+		deviation.col(2) = deviation.col(2) * eps_deviation / deviation.col(2).norm();*/
+
+		
+		//CountDeviation(deviation, var_deviation, var);
+		//CountLogSum(log_sum, deviation, eps_deviation);
+		//Eigen::HouseholderQR<Eigen::MatrixXd> qr(deviation);
+		//deviation = qr.householderQ();
+		//deviation *= eps_deviation;
+		/*for (size_t j = 0; j < N; j++)
+			for (size_t k = 0; k < N; k++)
+				var_deviation[j][k] = var[k] + deviation(j, k);*/
+		//if (i != 0)
+		//{
+		//	for (size_t j = 0; j < N; j++)
+		//	{
+		//		f1out << var[j] << ',';
+		//	}
+		//	f1out << i << ',';
+		//	for (size_t j = 0; j < N; j++)
+		//		if (j != N - 1)
+		//			f1out << x_deviation(j)/*log_sum[j] / i / T*/ << ",";
+		//		else
+		//			f1out << x_deviation(j)/*log_sum[j] / i / T*/;
+		//	f1out << std::endl;
+		//}
+		//f2out << log_sum_x / i / T / dt << ',' << log_sum_y / i / T / dt << ',' << log_sum_z / i / T / dt << std::endl;
 	}
+	/*Eigen::MatrixXd lymbda = (Y * Y.transpose()).log()/(2*M);
+	auto eigenvalues_lymbda = lymbda.eigenvalues();
+	for (size_t i = 0; i < N; i++)
+	{
+		std::cout << eigenvalues_lymbda(i) << " | ";
+	}*/
+	std::cout << "Lyapunov exponents: " << std::endl;
+	for (size_t i = 0; i < N; i++)
+	{
+		std::cout << log_sum[i] / M / T / dt << std::endl;
+	}
+	//std::cout << Eigen::GetJacobianMatrix({ 1,1,0 }, functions).row(0);
 	f1out.close();
 }
