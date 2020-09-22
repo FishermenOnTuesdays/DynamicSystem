@@ -451,7 +451,7 @@ int main()
 	f2out.open("../wwwroot/output/laypunov.csv");//Введите свой путь
 	std::vector<long double> var;
 	std::vector<std::string> functions;
-	#ifndef _DEBUG
+	#ifdef _DEBUG
 		N = 3;
 	#else
 		std::cin >> N;
@@ -463,14 +463,14 @@ int main()
 		f1out << 'l' + std::to_string(i) + ',';
 	f1out << 'l' + std::to_string(N) + '\n';
 	functions.resize(N);
-	#ifndef _DEBUG
+	#ifdef _DEBUG
 		functions = Lorenz_attractor;
 	#else
 		for (size_t i = 0; i < N; i++)
 			std::cin >> functions[i];
 	#endif
 	var.resize(N);
-	#ifndef _DEBUG
+	#ifdef _DEBUG
 		for (size_t i = 0; i < N; i++)
 			var[i] = 0.1;
 	#else
@@ -501,7 +501,7 @@ int main()
 	for (size_t i = 0; i < N; i++)
 		std::cout << var[i] << ", ";
 	std::cout << "\nGOOD\n";*/
-	long int M = 10000;
+	long int M = 100000;
 	long int T = 1;
 	//std::vector<long double> deviation_x(var.size(), 0);
 	//deviation_x[0] = eps_deviation;
