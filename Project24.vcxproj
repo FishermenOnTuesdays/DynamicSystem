@@ -141,11 +141,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DynamicSystem.cpp" />
     <ClCompile Include="fparser.cc" />
     <ClCompile Include="fpoptimizer.cc" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DynamicSystem.h" />
     <ClInclude Include="FindComplexRoots.h" />
     <ClInclude Include="fparser.hh" />
     <ClInclude Include="fparser_gmpint.hh" />
