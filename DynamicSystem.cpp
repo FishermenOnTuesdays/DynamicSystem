@@ -80,18 +80,17 @@ namespace DynS
 			this->functions.push_back(function_parser);
 		}
 		this->point_of_trajectory = starting_point;
+		this->trajectory.push_back(starting_point);
 		CalculateJacobianMatrix();
 	}
 
 	std::vector<Eigen::VectorXld> DynamicSystem::GetTrajectory(long double time)
 	{
-		std::vector<Eigen::VectorXld> points_of_trajectory;
-		for (size_t i = 0; i < static_cast<size_t>(time / dt); i++)
+		for (size_t i = 0; i < static_cast<size_t>(time / this->dt); i++)
 		{
-			points_of_trajectory.push_back(this->point_of_trajectory);
 			NextPointOfTrajectory();
 		}
-		return points_of_trajectory;
+		return this->trajectory;
 	}
 
 	std::vector<long double> DynamicSystem::GetSpectrumLyapunov(long double time)
@@ -171,6 +170,14 @@ namespace DynS
 		return series_spectrum_lyapunov;
 	}
 
+	/*For Rouol*/
+	std::vector<Eigen::VectorXld> DynamicSystem::GetPoincareMap(Eigen::VectorXld normal_vector, Eigen::VectorXld point_on_plane)
+	{
+		/*Use Eigen library for vector-matrix computation*/
+		//Also you have this->trajectory for this method
+		return std::vector<Eigen::VectorXld>();
+	}
+
 	void DynamicSystem::SetDt(long double dt)
 	{
 		this->dt = dt;
@@ -199,6 +206,7 @@ namespace DynS
 		buffer_point_of_trajectory = this->point_of_trajectory + k3 * this->dt;
 		k4 = f(buffer_point_of_trajectory);
 		this->point_of_trajectory += this->dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
+		this->trajectory.push_back(this->point_of_trajectory);
 	}
 
 	void DynamicSystem::NextPointOfTrajectory()

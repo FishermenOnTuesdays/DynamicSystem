@@ -56,8 +56,12 @@ namespace DynS
 		//Returns a spectrum of Lyapunov exponents this dynamic system
 		std::vector<long double> GetSpectrumLyapunov(long double time);
 
-		//Returns a series of spectrum of Lypunov exponents at every step
+		//Returns a series of Lypunov exponents spectrum at every step
 		std::map<std::string, std::vector<long double>> GetTimeSeriesSpectrumLyapunov(long double time);
+
+		/*For Rouol*/
+		//Returns Poincare map
+		std::vector<Eigen::VectorXld> GetPoincareMap(Eigen::VectorXld normal_vector, Eigen::VectorXld point_on_plane);
 
 		//Set dt for this dynamic system
 		void SetDt(long double dt);
@@ -67,13 +71,13 @@ namespace DynS
 		//Vector function defining a dynamic system
 		Eigen::VectorXld f(const Eigen::VectorXld& vector);
 
-		//Calculate next point of trajectory of dynamic system by explicit Runge-Kutta fourth-order method
+		//Calculate next point of trajectory dynamic system by explicit Runge-Kutta fourth-order method
 		void ExplicitRungeKuttaFourthOrder();
 
-		//Calculate next point of trajectory of dynamic system
+		//Calculate next point of dynamic system trajectory 
 		void NextPointOfTrajectory();
 
-		//Calculate Jacobian matrix in current point of trajectory of dynamic system
+		//Calculate Jacobian matrix in current point of dynamic system trajectory 
 		void CalculateJacobianMatrix();
 
 		//Private variables:
@@ -87,8 +91,11 @@ namespace DynS
 		//Time integration step
 		long double dt = 0.01;
 
-		//Current point of trajectory of dynamic system
+		//Current point of dynamic system trajectory
 		Eigen::VectorXld point_of_trajectory;
+
+		//Trajectory of dynamic system
+		std::vector<Eigen::VectorXld> trajectory;
 
 		//Explicit method currently used
 		ExplicitNumericalMethod explicit_method = ExplicitNumericalMethod::RungeKuttaFourthOrder;
@@ -96,7 +103,7 @@ namespace DynS
 		//Implicit method currently used
 		ImplicitNumericalMethod implicit_method = ImplicitNumericalMethod::EulerImplicit;
 
-		//Jacobian matrix in the current point of trajectory of dynamic system
+		//Jacobian matrix in the current point of dynamic system trajectory
 		Eigen::MatrixXld jacobian_matrix;
 
 		//Accuracy
