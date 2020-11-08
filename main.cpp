@@ -15,7 +15,8 @@ enum class InputData
 {
 	Main,
 	LyapunovMap,
-	Bifurcation
+	Bifurcation,
+	PoincareMap
 };
 
 struct InputDataMain
@@ -113,6 +114,12 @@ nlohmann::json LyapunovMap(nlohmann::json& input_json)
 	//OutputDataMain output_data{};
 	/*output_data.map_lyapunov_exponents =*/ return nlohmann::json{ DynS::GetMapLyapunovExponents(input_data.starting_values, input_data.functions, input_data.variables, input_data.additional_equations, input_data.parameters, input_data.ranges, input_data.steps, input_data.time, input_data.time, input_data.dt) };
 	//return nlohmann::json{ output_data };
+}
+
+nlohmann::json PoincareMap(nlohmann::json& input_json)
+{
+	InputDataMain input_data = input_json;
+	return nlohmann::json{ DynS::GetMapLyapunovExponents(input_data.starting_values, input_data.functions, input_data.variables, input_data.additional_equations, input_data.parameters, input_data.ranges, input_data.steps, input_data.time, input_data.time, input_data.dt) };
 }
 
 nlohmann::json Bifurcation(nlohmann::json& input_json)
