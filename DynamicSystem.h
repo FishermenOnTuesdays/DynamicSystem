@@ -13,10 +13,22 @@ namespace Eigen
 {
 	using MatrixXld = Eigen::Matrix<long double, Dynamic, Dynamic>;
 	using VectorXld = Eigen::Matrix<long double, Dynamic, 1>;
+	using Vector2ld = Eigen::Matrix<long double, 2, 1>;
+	using Vector3ld = Eigen::Matrix<long double, 3, 1>;
 }
 
 namespace DynS
 {
+	// needed for Poincare
+	typedef struct plane_equation {
+		long double A, B, C, D;
+	} PlaneEquation;
+
+	typedef struct poincare_result {
+		std::vector<Eigen::Vector3ld> intersections3D;
+		std::vector<Eigen::Vector2ld> intersections2D;
+	} PoincareMapData;
+
 	//Other functions
 
 	//Returns a map of Lyapunov exponents this dynamic system
@@ -61,7 +73,7 @@ namespace DynS
 
 		/*For Rouol*/
 		//Returns Poincare map
-		std::vector<Eigen::VectorXld> GetPoincareMap(Eigen::VectorXld normal_vector, Eigen::VectorXld point_on_plane);
+		PoincareMapData GetPoincareMap(PlaneEquation planeEquation);
 
 		//Set dt for this dynamic system
 		void SetDt(long double dt);
