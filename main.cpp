@@ -33,6 +33,8 @@ struct InputDataMain
 	long double step;
 	long double time;
 	long double dt;
+	std::vector<Eigen::VectorXld> trajectory;
+	Eigen::VectorXld planeEquation;
 };
 
 struct OutputDataMain
@@ -111,9 +113,14 @@ nlohmann::json Main(nlohmann::json& input_json)
 nlohmann::json LyapunovMap(nlohmann::json& input_json)
 {
 	InputDataMain input_data = input_json;
-	//OutputDataMain output_data{};
-	/*output_data.map_lyapunov_exponents =*/ return nlohmann::json{ DynS::GetMapLyapunovExponents(input_data.starting_values, input_data.functions, input_data.variables, input_data.additional_equations, input_data.parameters, input_data.ranges, input_data.steps, input_data.time, input_data.time, input_data.dt) };
-	//return nlohmann::json{ output_data };
+	PlaneEquation planeEquation;
+	planeEquation.A = input_data.planeEquation[0];
+	planeEquation.B = input_data.planeEquation[1];
+	planeEquation.C = input_data.planeEquation[2];
+	planeEquation.D = input_data.planeEquation[3];
+	std::vector<Eigen::VectorXld> trajectory = input_data.trajectory;
+	PoincareMapData result = DynS::GetPoincareMap(planeEquation, trajectory);
+	return nlohmann::json{ {"intersections2D", result.intersections2D}, {"intersections3D", result.intersections3D} };
 }
 
 nlohmann::json PoincareMap(nlohmann::json& input_json)

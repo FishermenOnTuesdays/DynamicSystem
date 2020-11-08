@@ -58,6 +58,55 @@ namespace DynS
 		return map_lyapunov_spectrum;
 	}
 
+	PoincareMapData GetPoincareMap(PlaneEquation planeEquation, std::vector<Eigen::VectorXld> trajectory)
+	{
+		/*Use Eigen library for vector-matrix computation*/
+		//Also you have this->trajectory for this method
+
+		// assume 3d trajectory
+
+		Basis3ld basis = transformBasis(Eigen::Vector3ld(planeEquation.A, planeEquation.B, planeEquation.C));
+
+		std::vector<Eigen::Vector3ld> intersections3;
+		std::vector<Eigen::Vector2ld> intersections2;
+
+		Eigen::Vector3ld prevpoint;
+		Eigen::Vector3ld point;
+		Eigen::Vector3ld intersectionPoint;
+		int prevsign;
+		int sign;
+		prevsign = SideSign(planeEquation, point);
+
+		int N = trajectory.size();
+		for (int i = 1; i < N; i++) {
+			//std::cin >> data[i].x >> data[i].y >> data[i].z;        
+			std::cin >> point.x >> point.y >> point.z;
+			sign = SideSign(planeEquation, point);
+			if (sign == 0) {
+				intersectionPoint = point;
+				intersections3.push_back(intersectionPoint);
+				intersections2.push_back(applyBasis(basis, intersectionPoint));
+			}
+			else if (sign != prevsign) {
+				intersectionPoint = point;
+				//intersections.push_back(intersectionPoint);
+				///*
+				intersectionPoint = intersectionCalc(planeEquation, prevpoint, point);
+				//if (IsOnInterval(prevpoint, point, intersectionPoint))
+				intersections3.push_back(intersectionPoint);
+				intersections2.push_back(applyBasis(basis, intersectionPoint));
+				//*/
+			}
+			prevpoint = point;
+			prevsign = sign;
+		}
+
+		PoincareMapData result = PoincareMapData();
+		result.intersections2D = intersections2;
+		result.intersections3D = intersections3;
+		return result;
+	}
+
 	//Public methods:
 
 	DynamicSystem::DynamicSystem(const Eigen::VectorXld& starting_point, const std::vector<std::string>& strings_functions, std::string variables, std::string additional_variables)
@@ -248,7 +297,7 @@ namespace DynS
 			prevsign = sign;
 		}
 		
-		PoincareMapData result = PoincareResult();
+		PoincareMapData result = PoincareMapData();
 		result.intersections2D = intersections2;
 		result.intersections3D = intersections3;
 		return result;

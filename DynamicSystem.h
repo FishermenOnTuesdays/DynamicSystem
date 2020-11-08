@@ -17,17 +17,18 @@ namespace Eigen
 	using Vector3ld = Eigen::Matrix<long double, 3, 1>;
 }
 
+// needed for Poincare
+typedef struct plane_equation {
+	long double A, B, C, D;
+} PlaneEquation;
+
+typedef struct poincare_result {
+	std::vector<Eigen::Vector3ld> intersections3D;
+	std::vector<Eigen::Vector2ld> intersections2D;
+} PoincareMapData;
+
 namespace DynS
 {
-	// needed for Poincare
-	typedef struct plane_equation {
-		long double A, B, C, D;
-	} PlaneEquation;
-
-	typedef struct poincare_result {
-		std::vector<Eigen::Vector3ld> intersections3D;
-		std::vector<Eigen::Vector2ld> intersections2D;
-	} PoincareMapData;
 
 	//Other functions
 
@@ -43,6 +44,9 @@ namespace DynS
 		long double time_calculation_lyapunov_spectrum,
 		long double dt
 	);
+
+	//Returns Poincare map from input trajectory
+	PoincareMapData GetPoincareMap(PlaneEquation planeEquation, std::vector<Eigen::VectorXld> trajectory);
 
 	class DynamicSystem
 	{
@@ -62,13 +66,18 @@ namespace DynS
 		//Create a dynamic system that has specified initial values and defined by the specified functions
 		DynamicSystem(const Eigen::VectorXld& starting_point, const std::vector<std::string>& strings_functions, std::string variables = "", std::string additional_variables = "");
 
+		/*
+		//Create a dynamic system that has specified trajectory
+		DynamicSystem(const std::vector<Eigen::VectorXld>& trajectory);
+		*/
+
 		//Returns a sequence of trajectory's points at given time
 		std::vector<Eigen::VectorXld> GetTrajectory(long double time);
 
 		//Returns a spectrum of Lyapunov exponents this dynamic system
 		std::vector<long double> GetSpectrumLyapunov(long double time);
 
-		//Returns a series of Lypunov exponents spectrum at every step
+		//Returns a series of Lyapunov exponents spectrum at every step
 		std::map<std::string, std::vector<long double>> GetTimeSeriesSpectrumLyapunov(long double time);
 
 		/*For Rouol*/
