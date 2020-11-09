@@ -34,7 +34,7 @@ struct InputDataMain
 	long double time;
 	long double dt;
 	std::vector<Eigen::VectorXld> trajectory;
-	Eigen::VectorXld planeEquation;
+	std::vector<long double> planeEquation;
 };
 
 struct OutputDataMain
@@ -43,20 +43,34 @@ struct OutputDataMain
 	std::map<std::string, std::vector<long double>> series_of_spectrum_lyapunov_exponents;
 	std::string variables;
 	std::vector<std::pair<std::pair<long double, long double>, long double>> map_lyapunov_exponents;
+	std::vector<Eigen::Vector3ld> intersections3D;
+	std::vector<Eigen::Vector2ld> intersections2D;
 	long double dt;
 };
 
 void from_json(const nlohmann::json& json, InputDataMain& input_data)
 {
-	std::vector<long double> starting_values = json.at("start values[]").get<std::vector<long double>>();
-	input_data.starting_values.resize(starting_values.size());
-	for (size_t i = 0; i < starting_values.size(); i++)
-		input_data.starting_values(i) = starting_values[i];
-	json.at("functions[]").get_to(input_data.functions);
-	json.at("variables").get_to(input_data.variables);
-	json.at("additional equations").get_to(input_data.additional_equations);
-	json.at("time").get_to(input_data.time);
-	json.at("dt").get_to(input_data.dt);
+	try {
+		std::vector<long double> starting_values = json.at("start values[]").get<std::vector<long double>>();
+		input_data.starting_values.resize(starting_values.size());
+		for (size_t i = 0; i < starting_values.size(); i++)
+			input_data.starting_values(i) = starting_values[i];
+		json.at("functions[]").get_to(input_data.functions);
+		json.at("variables").get_to(input_data.variables);
+		json.at("additional equations").get_to(input_data.additional_equations);
+		json.at("time").get_to(input_data.time);
+		json.at("dt").get_to(input_data.dt);
+	}
+	catch (nlohmann::json::out_of_range & ex) {}
+	try {
+		// trajectory
+		std::vector<std::vector<long double>> trajectory = json.at("trajectory[]").get<std::vector<std::vector<long double>>>();
+		input_data.trajectory.resize(trajectory.size());
+		for (size_t i = 0; i < trajectory.size(); i++)
+			for (size_t j = 0; j < trajectory[i].size(); j++)
+				input_data.trajectory[i](j) = trajectory[i][j];
+	}
+	catch (nlohmann::json::out_of_range & ex) {}
 	try { json.at("parameters[]").get_to(input_data.parameters); } 
 	catch (nlohmann::json::out_of_range& ex) {}
 	try { json.at("ranges[]").get_to(input_data.ranges); }
@@ -89,9 +103,21 @@ void to_json(nlohmann::json& json, const OutputDataMain& output_data)
 		trajectory["t"].push_back(time);
 		time += output_data.dt;
 	}
+	// intersections3D
+	std::vector<std::vector<long double>> intersections3D;
+	for (size_t i = 0; i < output_data.intersections3D.size(); i++)
+		for (size_t j = 0; j < output_data.intersections3D[i].size(); j++)
+			intersections3D[i][j] = output_data.intersections3D[i][j];
+	// intersections2D
+	std::vector<std::vector<long double>> intersections2D;
+	for (size_t i = 0; i < output_data.intersections2D.size(); i++)
+		for (size_t j = 0; j < output_data.intersections2D[i].size(); j++)
+			intersections2D[i][j] = output_data.intersections2D[i][j];
 	json = nlohmann::json
 	{ 
-		{"trajectory", trajectory}, 
+		{"trajectory", trajectory},
+		{"intersections3D", intersections3D},
+		{"intersections2D", intersections2D},
 		{"series of spectrum lyapunov exponents", output_data.series_of_spectrum_lyapunov_exponents}, 
 		{"map_lyapunov_exponents", output_data.map_lyapunov_exponents}
 	};
@@ -110,7 +136,7 @@ nlohmann::json Main(nlohmann::json& input_json)
 	return nlohmann::json{ output_data };
 }
 
-nlohmann::json LyapunovMap(nlohmann::json& input_json)
+nlohmann::json PoincareMap(nlohmann::json& input_json)
 {
 	InputDataMain input_data = input_json;
 	PlaneEquation planeEquation;
@@ -120,10 +146,13 @@ nlohmann::json LyapunovMap(nlohmann::json& input_json)
 	planeEquation.D = input_data.planeEquation[3];
 	std::vector<Eigen::VectorXld> trajectory = input_data.trajectory;
 	PoincareMapData result = DynS::GetPoincareMap(planeEquation, trajectory);
-	return nlohmann::json{ {"intersections2D", result.intersections2D}, {"intersections3D", result.intersections3D} };
+	OutputDataMain output_data{};
+	output_data.intersections2D = result.intersections2D;
+	output_data.intersections3D = result.intersections3D;
+	return nlohmann::json{ output_data };
 }
 
-nlohmann::json PoincareMap(nlohmann::json& input_json)
+nlohmann::json LyapunovMap(nlohmann::json& input_json)
 {
 	InputDataMain input_data = input_json;
 	return nlohmann::json{ DynS::GetMapLyapunovExponents(input_data.starting_values, input_data.functions, input_data.variables, input_data.additional_equations, input_data.parameters, input_data.ranges, input_data.steps, input_data.time, input_data.time, input_data.dt) };
@@ -185,6 +214,9 @@ int main()
 		break;
 	case InputData::Bifurcation:
 		output_json = Bifurcation(input_json);
+		break;
+	case InputData::PoincareMap:
+		output_json = PoincareMap(input_json);
 		break;
 	}
 	std::cout << output_json;

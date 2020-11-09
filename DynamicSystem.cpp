@@ -58,6 +58,39 @@ namespace DynS
 		return map_lyapunov_spectrum;
 	}
 
+	// Poincare
+
+	int Sign(long double x) {
+		return (x > 0) ? 1 : ((x < 0) ? -1 : 0);
+	}
+
+	int SideSign(PlaneEquation equation, Eigen::Vector3ld point) {
+		return Sign(equation.A * point[0] + equation.B * point[1] + equation.C * point[2] + equation.D);
+	}
+
+	using Basis3ld = std::vector<Eigen::Vector3ld>;
+
+	Eigen::Vector2ld applyBasis(Basis3ld basis, Eigen::Vector3ld point) {
+		return Eigen::Vector2ld(basis[0].dot(point), basis[1].dot(point));
+	}
+
+	Basis3ld transformBasis(Eigen::Vector3ld vector) {
+		Basis3ld basis = { Eigen::Vector3ld(1, 0, 0), Eigen::Vector3ld(0, 1, 0), Eigen::Vector3ld(0, 0, 1) };
+		if (vector == basis[0] || vector == basis[1] || vector == basis[2])
+			return basis;
+		else {
+			Eigen::Vector3ld z = vector.normalized();
+			Eigen::Vector3ld x = (basis[1] - z * basis[1].dot(z)).normalized();
+			Eigen::Vector3ld y = x.cross(z);
+			return Basis3ld({ x, y, z });
+		}
+	}
+
+	Eigen::Vector3ld intersectionCalc(PlaneEquation planeEquation, Eigen::Vector3ld pointA, Eigen::Vector3ld pointB) {
+		long double t = (planeEquation.A * pointA[0] + planeEquation.B * pointA[1] + planeEquation.C * pointA[2] + planeEquation.D) / (planeEquation.A * (pointA[0] - pointB[0]) + planeEquation.B * (pointA[1] - pointB[1]) + planeEquation.C * (pointA[2] - pointB[2]));
+		return Eigen::Vector3ld(pointA[0] + (pointB[0] - pointA[0]) * t, pointA[1] + (pointB[1] - pointA[1]) * t, pointA[2] + (pointB[2] - pointA[2]) * t);
+	}
+
 	PoincareMapData GetPoincareMap(PlaneEquation planeEquation, std::vector<Eigen::VectorXld> trajectory)
 	{
 		/*Use Eigen library for vector-matrix computation*/
@@ -79,8 +112,7 @@ namespace DynS
 
 		int N = trajectory.size();
 		for (int i = 1; i < N; i++) {
-			//std::cin >> data[i].x >> data[i].y >> data[i].z;        
-			std::cin >> point.x >> point.y >> point.z;
+			point = trajectory[i];
 			sign = SideSign(planeEquation, point);
 			if (sign == 0) {
 				intersectionPoint = point;
@@ -219,39 +251,6 @@ namespace DynS
 		return series_spectrum_lyapunov;
 	}
 
-	// Poincare
-
-	int Sign(long double x) {
-		return (x > 0) ? 1 : ((x < 0) ? -1 : 0);
-	}
-
-	int SideSign(PlaneEquation equation, Eigen::Vector3ld point) {
-		return Sign(equation.A * point.x + equation.B * point.y + equation.C * point.z + equation.D);
-	}
-
-	using Basis3ld = std::vector<Eigen::Vector3ld>;
-
-	Eigen::Vector2ld applyBasis(Basis3ld basis, Eigen::Vector3ld point) {
-		return Eigen::Vector2ld(basis[0].dot(point), basis[1].dot(point));
-	}
-
-	Basis3ld transformBasis(Eigen::Vector3ld vector) {
-		Basis3ld basis = { Eigen::Vector3ld(1, 0, 0), Eigen::Vector3ld(0, 1, 0), Eigen::Vector3ld(0, 0, 1) };
-		if (vector == basis[0] || vector == basis[1] || vector == basis[2])
-			return basis;
-		else {
-			Eigen::Vector3ld z = vector.normalized();
-			Eigen::Vector3ld x = (basis[1] - z * basis[1].dot(z)).normalized();
-			Eigen::Vector3ld y = x.cross(z);
-			return Basis3ld({ x, y, z });
-		}
-	}
-
-	Eigen::Vector3ld intersectionCalc(PlaneEquation planeEquation, Eigen::Vector3ld pointA, Eigen::Vector3ld pointB) {
-		long double t = (planeEquation.A * pointA.x + planeEquation.B * pointA.y + planeEquation.C * pointA.z + planeEquation.D) / (planeEquation.A * (pointA.x - pointB.x) + planeEquation.B * (pointA.y - pointB.y) + planeEquation.C * (pointA.z - pointB.z));
-		return Eigen::Vector3ld(pointA.x + (pointB.x - pointA.x) * t, pointA.y + (pointB.y - pointA.y) * t, pointA.z + (pointB.z - pointA.z) * t);
-	}
-
 	/*For Rouol*/
 	PoincareMapData DynamicSystem::GetPoincareMap(PlaneEquation planeEquation)
 	{
@@ -274,9 +273,8 @@ namespace DynS
 		prevsign = SideSign(planeEquation, point);
 
 		int N = data.size();
-		for (int i = 1; i < N; i++) {
-			//std::cin >> data[i].x >> data[i].y >> data[i].z;        
-			std::cin >> point.x >> point.y >> point.z;
+		for (int i = 1; i < N; i++) {  
+			point = trajectory[i];
 			sign = SideSign(planeEquation, point);
 			if (sign == 0) {
 				intersectionPoint = point;
