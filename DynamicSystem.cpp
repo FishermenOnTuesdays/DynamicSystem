@@ -34,7 +34,17 @@ namespace DynS
 					parameters.second + ":=" + std::to_string(second_parameter) + ";"
 			};
 			dynamic_system.SetDt(dt);
-			dynamic_system.GetTrajectory(time_access_to_attractor);
+			try
+			{
+				dynamic_system.GetTrajectory(time_access_to_attractor);
+			}
+			catch (std::exception& ex)
+			{
+				if (ex.what() == "Infinity trajectory")
+				{
+					dynamic_system.SetCurrentPointOfTrajectory(starting_point);
+				}
+			}
 			auto spectrum = dynamic_system.GetSpectrumLyapunov(time_calculation_lyapunov_spectrum);
 			map_lyapunov_spectrum[i] = { {first_parameter, second_parameter}, *std::max_element(spectrum.begin(), spectrum.end()) };
 		}
@@ -195,7 +205,19 @@ namespace DynS
 				buffer_variation = variation_matrix + k3 * this->dt;
 				k4 = this->jacobian_matrix * buffer_variation;
 				variation_matrix += this->dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
-				NextPointOfTrajectory();
+				try
+				{
+					NextPointOfTrajectory();
+				}
+				catch (std::exception& ex)
+				{
+					if (ex.what() == "Infinity trajectory")
+					{
+						for (size_t k = 0; k < this->dimension; k++)
+							spectrum_of_lyapunov_exponents.push_back(sums_of_logarithms[k] / i / T / this->dt);
+						return spectrum_of_lyapunov_exponents;
+					}
+				}
 			}
 			auto QR = variation_matrix.householderQr();
 			Eigen::VectorXld diagonal = QR.matrixQR().diagonal();
@@ -306,6 +328,13 @@ namespace DynS
 		this->dt = dt;
 	}
 
+	void DynamicSystem::SetCurrentPointOfTrajectory(Eigen::VectorXld current_point)
+	{
+		this->point_of_trajectory = current_point;
+		this->trajectory.clear();
+		this->trajectory.push_back(this->point_of_trajectory);
+	}
+
 	//Private methods:
 
 	Eigen::VectorXld DynamicSystem::f(const Eigen::VectorXld& vector)
@@ -335,7 +364,7 @@ namespace DynS
 	void DynamicSystem::NextPointOfTrajectory()
 	{
 		if (this->point_of_trajectory.norm() > 1e30)
-			return;
+			throw std::exception("Infinity trajectory");
 		if (false/*Dynamic system is hard?*/)
 		{
 			//Make implementation

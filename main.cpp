@@ -67,10 +67,15 @@ void from_json(const nlohmann::json& json, InputDataMain& input_data)
 		std::vector<std::vector<long double>> trajectory = json.at("trajectory[]").get<std::vector<std::vector<long double>>>();
 		input_data.trajectory.resize(trajectory.size());
 		for (size_t i = 0; i < trajectory.size(); i++)
+		{
+			input_data.trajectory[i].resize(trajectory[i].size());
 			for (size_t j = 0; j < trajectory[i].size(); j++)
 				input_data.trajectory[i](j) = trajectory[i][j];
+		}
 	}
 	catch (nlohmann::json::out_of_range & ex) {}
+	try { json.at("plane equation[]").get_to(input_data.planeEquation); }
+	catch (nlohmann::json::out_of_range& ex) {}
 	try { json.at("parameters[]").get_to(input_data.parameters); } 
 	catch (nlohmann::json::out_of_range& ex) {}
 	try { json.at("ranges[]").get_to(input_data.ranges); }
@@ -106,13 +111,19 @@ void to_json(nlohmann::json& json, const OutputDataMain& output_data)
 	// intersections3D
 	std::vector<std::vector<long double>> intersections3D;
 	for (size_t i = 0; i < output_data.intersections3D.size(); i++)
+	{
+		intersections3D.push_back({});
 		for (size_t j = 0; j < output_data.intersections3D[i].size(); j++)
-			intersections3D[i][j] = output_data.intersections3D[i][j];
+			intersections3D[i].push_back(output_data.intersections3D[i][j]);
+	}
 	// intersections2D
 	std::vector<std::vector<long double>> intersections2D;
 	for (size_t i = 0; i < output_data.intersections2D.size(); i++)
+	{
+		intersections2D.push_back({});
 		for (size_t j = 0; j < output_data.intersections2D[i].size(); j++)
-			intersections2D[i][j] = output_data.intersections2D[i][j];
+			intersections2D[i].push_back(output_data.intersections2D[i][j]);
+	}
 	json = nlohmann::json
 	{ 
 		{"trajectory", trajectory},

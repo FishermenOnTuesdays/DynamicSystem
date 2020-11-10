@@ -87,6 +87,9 @@ namespace DynS
 		//Set dt for this dynamic system
 		void SetDt(long double dt);
 
+		//Set current point of dynamic system trajectory
+		void SetCurrentPointOfTrajectory(Eigen::VectorXld current_point);
+
 		//Private methods:
 	private:
 		//Vector function defining a dynamic system
