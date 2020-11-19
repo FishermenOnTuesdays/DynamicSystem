@@ -157,10 +157,10 @@ namespace DynS
 
 		// assume 3d trajectory
 		PlaneEquation planeEquation;
-		planeEquation.A = 1;
-		planeEquation.B = 1;
-		planeEquation.C = 1;
-		planeEquation.D = 1;
+		planeEquation.A = -1;
+		planeEquation.B = -1;
+		planeEquation.C = -1;
+		planeEquation.D = 0;
 
 		Basis3ld basis = transformBasis(Eigen::Vector3ld(planeEquation.A, planeEquation.B, planeEquation.C));
 
