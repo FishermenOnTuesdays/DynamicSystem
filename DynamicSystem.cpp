@@ -149,6 +149,68 @@ namespace DynS
 		return result;
 	}
 
+	// Bifurcation map
+	std::vector<long double> GetBifurcationMap(std::vector<Eigen::VectorXld> trajectory)
+	{
+		/*Use Eigen library for vector-matrix computation*/
+		//Also you have this->trajectory for this method
+
+		// assume 3d trajectory
+		PlaneEquation planeEquation;
+		planeEquation.A = 1;
+		planeEquation.B = 1;
+		planeEquation.C = 1;
+		planeEquation.D = 1;
+
+		Basis3ld basis = transformBasis(Eigen::Vector3ld(planeEquation.A, planeEquation.B, planeEquation.C));
+
+		//std::vector<Eigen::Vector3ld> intersections3;
+		//std::vector<Eigen::Vector2ld> intersections2;
+		std::vector<long double> intersections1;
+
+		Eigen::Vector3ld prevpoint;
+		Eigen::Vector3ld point;
+		Eigen::Vector3ld intersectionPoint;
+		Eigen::Vector2ld intersectionPoint2;
+		long double intersectionPoint1;
+		int prevsign;
+		int sign;
+		prevsign = SideSign(planeEquation, point);
+
+		int N = trajectory.size();
+		for (int i = 1; i < N; i++) {
+			point = trajectory[i];
+			sign = SideSign(planeEquation, point);
+			if (sign == 0) {
+				intersectionPoint = point;
+				//intersections3.push_back(intersectionPoint);
+				intersectionPoint2 = applyBasis(basis, intersectionPoint);
+				//intersections2.push_back(applyBasis(basis, intersectionPoint));
+				intersections1.push_back(intersectionPoint2[0]);
+			}
+			else if (sign != prevsign) {
+				intersectionPoint = point;
+				//intersections.push_back(intersectionPoint);
+				///*
+				intersectionPoint = intersectionCalc(planeEquation, prevpoint, point);
+				//if (IsOnInterval(prevpoint, point, intersectionPoint))
+				//intersections3.push_back(intersectionPoint);
+				intersectionPoint2 = applyBasis(basis, intersectionPoint);
+				//intersections2.push_back(applyBasis(basis, intersectionPoint));
+				intersections1.push_back(intersectionPoint2[1]);
+				//*/
+			}
+			prevpoint = point;
+			prevsign = sign;
+		}
+
+		//BifurcationMapData result = BifurcationMapData();
+		//result.intersections2D = intersections2;
+		//result.intersections3D = intersections3;
+		//result.intersections1D = intersections1;
+		return intersections1;
+	}
+
 	//Public methods:
 
 	DynamicSystem::DynamicSystem(const Eigen::VectorXld& starting_point, const std::vector<std::string>& strings_functions, std::string variables, std::string additional_variables)

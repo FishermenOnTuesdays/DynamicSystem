@@ -173,8 +173,9 @@ nlohmann::json Bifurcation(nlohmann::json& input_json)
 {
 	InputDataMain input_data = input_json;
 	size_t number_of_trajectories = (input_data.range.second - input_data.range.first) / input_data.step;
-	std::vector<std::map<std::string, std::vector<long double>>> trajectories(number_of_trajectories);
-	std::vector<long double> parameter_values(number_of_trajectories);
+	//std::vector<std::map<std::string, std::vector<long double>>> trajectories(number_of_trajectories);
+	std::vector<std::vector<long double>> BifurcationMap(number_of_trajectories);
+	//std::vector<long double> parameter_values(number_of_trajectories);
 	//#pragma omp parallel for
 	for (int i = 0; i < number_of_trajectories; i++)
 	{
@@ -188,6 +189,7 @@ nlohmann::json Bifurcation(nlohmann::json& input_json)
 		};
 		dynamic_system.SetDt(input_data.dt);
 		auto trajectory = dynamic_system.GetTrajectory(input_data.time);
+		/*
 		std::string temp_variables = input_data.variables;
 		std::replace(temp_variables.begin(), temp_variables.end(), ',', ' ');
 		std::istringstream iss(temp_variables);
@@ -195,6 +197,12 @@ nlohmann::json Bifurcation(nlohmann::json& input_json)
 		for (auto variable : variables)
 			trajectories[i].emplace(variable, std::vector<long double>{});
 		trajectories[i].emplace("t", std::vector<long double>{});
+		*/
+
+		// make Bifurcation Map
+		BifurcationMap[i] = DynS::GetBifurcationMap(trajectory);
+
+		/*
 		long double time = 0;
 		for (const auto& point : trajectory)
 		{
@@ -204,10 +212,12 @@ nlohmann::json Bifurcation(nlohmann::json& input_json)
 			time += input_data.dt;
 		}
 		parameter_values[i] = parameter;
+		*/
 	}
 	//OutputDataMain output_data{};
-	/*output_data.map_lyapunov_exponents =*/ return nlohmann::json{ {"parameter", input_data.parameter}, {"parameter_values", parameter_values}, {"trajectories", trajectories} };
+	/*output_data.map_lyapunov_exponents =*/ //return nlohmann::json{ {"parameter", input_data.parameter}, {"parameter_values", parameter_values}, {"trajectories", trajectories} };
 	//return nlohmann::json{ output_data };
+	return nlohmann::json{ {"BifurcationMap", BifurcationMap} };
 }
 
 int main()

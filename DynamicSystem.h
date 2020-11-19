@@ -27,6 +27,12 @@ typedef struct poincare_result {
 	std::vector<Eigen::Vector2ld> intersections2D;
 } PoincareMapData;
 
+/*
+typedef struct bifurcation_result {
+	std::vector<long double> intersections1D;
+} BifurcationMapData;
+*/
+
 namespace DynS
 {
 
@@ -47,6 +53,9 @@ namespace DynS
 
 	//Returns Poincare map from input trajectory
 	PoincareMapData GetPoincareMap(PlaneEquation planeEquation, std::vector<Eigen::VectorXld> trajectory);
+
+	//Returns Bifurcation map from input trajectory
+	std::vector<long double> GetBifurcationMap(std::vector<Eigen::VectorXld> trajectory);
 
 	class DynamicSystem
 	{
