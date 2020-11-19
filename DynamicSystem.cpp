@@ -172,7 +172,7 @@ namespace DynS
 		Eigen::Vector3ld point;
 		Eigen::Vector3ld intersectionPoint;
 		Eigen::Vector2ld intersectionPoint2;
-		long double intersectionPoint1;
+		//long double intersectionPoint1;
 		int prevsign;
 		int sign;
 		prevsign = SideSign(planeEquation, point);
