@@ -35,6 +35,16 @@ typedef struct bifurcation_result {
 
 namespace DynS
 {
+	//Exceptions:
+	class InfinityTrajectoryException : public std::exception
+	{
+	private:
+		std::string m_error;
+	public:
+		InfinityTrajectoryException(std::string error) : m_error(error) {}
+		const char* what() const noexcept { return m_error.c_str(); }
+	};
+
 
 	//Other functions
 
@@ -99,6 +109,9 @@ namespace DynS
 		//Set current point of dynamic system trajectory
 		void SetCurrentPointOfTrajectory(Eigen::VectorXld current_point);
 
+		//Return error comment
+		std::string GetErrorComment();
+
 		//Private methods:
 	private:
 		//Vector function defining a dynamic system
@@ -141,6 +154,9 @@ namespace DynS
 
 		//Accuracy
 		const long double epsilon = 0.0000001;
+
+		//Error comment:
+		std::string comment = "";
 	};
 
 }

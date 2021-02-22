@@ -239,9 +239,18 @@ namespace DynS
 
 	std::vector<Eigen::VectorXld> DynamicSystem::GetTrajectory(long double time)
 	{
+		bool is_infinity_trajectory = false;
 		for (size_t i = 0; i < static_cast<size_t>(time / this->dt); i++)
 		{
-			NextPointOfTrajectory();
+			try
+			{
+				NextPointOfTrajectory();
+			}
+			catch (InfinityTrajectoryException& ex)
+			{
+				this->comment.append(ex.what());
+				break;
+			}
 		}
 		return this->trajectory;
 	}
@@ -306,30 +315,36 @@ namespace DynS
 		Eigen::MatrixXld variation_matrix = Eigen::MatrixXld::Identity(this->dimension, this->dimension);
 		for (size_t i = 0; i < M; i++)
 		{
-			for (size_t j = 0; j < T; j++)
-			{
-				Eigen::MatrixXld k1, k2, k3, k4, buffer_variation;
-				buffer_variation = variation_matrix;
-				k1 = this->jacobian_matrix * buffer_variation;
-				buffer_variation = variation_matrix + k1 * this->dt / 2;
-				k2 = this->jacobian_matrix * buffer_variation;
-				buffer_variation = variation_matrix + k2 * this->dt / 2;
-				k3 = this->jacobian_matrix * buffer_variation;
-				buffer_variation = variation_matrix + k3 * this->dt;
-				k4 = this->jacobian_matrix * buffer_variation;
-				variation_matrix += this->dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
-				NextPointOfTrajectory();
-			}
-			auto QR = variation_matrix.householderQr();
-			Eigen::VectorXld diagonal = QR.matrixQR().diagonal();
-			for (size_t j = 0; j < this->dimension; j++)
-				sums_of_logarithms[j] += logl(fabsl(diagonal(j)));
-			variation_matrix = QR.householderQ();
-			if (i != 0)
-			{
+			try {
+				for (size_t j = 0; j < T; j++)
+				{
+					Eigen::MatrixXld k1, k2, k3, k4, buffer_variation;
+					buffer_variation = variation_matrix;
+					k1 = this->jacobian_matrix * buffer_variation;
+					buffer_variation = variation_matrix + k1 * this->dt / 2;
+					k2 = this->jacobian_matrix * buffer_variation;
+					buffer_variation = variation_matrix + k2 * this->dt / 2;
+					k3 = this->jacobian_matrix * buffer_variation;
+					buffer_variation = variation_matrix + k3 * this->dt;
+					k4 = this->jacobian_matrix * buffer_variation;
+					variation_matrix += this->dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
+					NextPointOfTrajectory();
+				}
+				auto QR = variation_matrix.householderQr();
+				Eigen::VectorXld diagonal = QR.matrixQR().diagonal();
 				for (size_t j = 0; j < this->dimension; j++)
-					series_spectrum_lyapunov["lambda" + std::to_string(j + 1)].push_back(sums_of_logarithms[j] / i / T / this->dt);
-				series_spectrum_lyapunov["t"].push_back(i*this->dt);
+					sums_of_logarithms[j] += logl(fabsl(diagonal(j)));
+				variation_matrix = QR.householderQ();
+				if (i != 0)
+				{
+					for (size_t j = 0; j < this->dimension; j++)
+						series_spectrum_lyapunov["lambda" + std::to_string(j + 1)].push_back(sums_of_logarithms[j] / i / T / this->dt);
+					series_spectrum_lyapunov["t"].push_back(i * this->dt);
+				}
+			}
+			catch (InfinityTrajectoryException& ex)
+			{
+				break;
 			}
 		}
 		return series_spectrum_lyapunov;
@@ -397,6 +412,11 @@ namespace DynS
 		this->trajectory.push_back(this->point_of_trajectory);
 	}
 
+	std::string DynamicSystem::GetErrorComment()
+	{
+		return this->comment;
+	}
+
 	//Private methods:
 
 	Eigen::VectorXld DynamicSystem::f(const Eigen::VectorXld& vector)
@@ -426,7 +446,7 @@ namespace DynS
 	void DynamicSystem::NextPointOfTrajectory()
 	{
 		if (this->point_of_trajectory.norm() > 1e30)
-			throw std::exception("Infinity trajectory");
+			throw InfinityTrajectoryException("Infinity trajectory");
 		if (false/*Dynamic system is hard?*/)
 		{
 			//Make implementation

@@ -46,6 +46,7 @@ struct OutputDataMain
 	std::vector<Eigen::Vector3ld> intersections3D;
 	std::vector<Eigen::Vector2ld> intersections2D;
 	long double dt;
+	std::string comment;
 };
 
 void from_json(const nlohmann::json& json, InputDataMain& input_data)
@@ -130,7 +131,8 @@ void to_json(nlohmann::json& json, const OutputDataMain& output_data)
 		{"intersections3D", intersections3D},
 		{"intersections2D", intersections2D},
 		{"series of spectrum lyapunov exponents", output_data.series_of_spectrum_lyapunov_exponents}, 
-		{"map_lyapunov_exponents", output_data.map_lyapunov_exponents}
+		{"map_lyapunov_exponents", output_data.map_lyapunov_exponents},
+		{"comment", output_data.comment}
 	};
 }
 
@@ -141,6 +143,9 @@ nlohmann::json Main(nlohmann::json& input_json)
 	DynS::DynamicSystem dynamic_system{ input_data.starting_values, input_data.functions, input_data.variables, input_data.additional_equations };
 	dynamic_system.SetDt(input_data.dt);
 	output_data.trajectory = dynamic_system.GetTrajectory(input_data.time);
+	output_data.comment = dynamic_system.GetErrorComment();
+	if(output_data.comment == "Infinity trajectory")
+		dynamic_system.SetCurrentPointOfTrajectory(input_data.starting_values);
 	output_data.series_of_spectrum_lyapunov_exponents = dynamic_system.GetTimeSeriesSpectrumLyapunov(input_data.time);
 	output_data.variables = input_data.variables;
 	output_data.dt = input_data.dt;
@@ -222,23 +227,30 @@ nlohmann::json Bifurcation(nlohmann::json& input_json)
 
 int main()
 {
-	nlohmann::json input_json{};
-	std::cin >> input_json;
-	nlohmann::json output_json{};
-	switch (input_json.at("request type").get<InputData>())
+	try
 	{
-	case InputData::Main:
-		output_json = Main(input_json);
-		break;
-	case InputData::LyapunovMap:
-		output_json = LyapunovMap(input_json);
-		break;
-	case InputData::Bifurcation:
-		output_json = Bifurcation(input_json);
-		break;
-	case InputData::PoincareMap:
-		output_json = PoincareMap(input_json);
-		break;
+		nlohmann::json input_json{};
+		std::cin >> input_json;
+		nlohmann::json output_json{};
+		switch (input_json.at("request type").get<InputData>())
+		{
+		case InputData::Main:
+			output_json = Main(input_json);
+			break;
+		case InputData::LyapunovMap:
+			output_json = LyapunovMap(input_json);
+			break;
+		case InputData::Bifurcation:
+			output_json = Bifurcation(input_json);
+			break;
+		case InputData::PoincareMap:
+			output_json = PoincareMap(input_json);
+			break;
+		}
+		std::cout << output_json;
 	}
-	std::cout << output_json;
+	catch(std::exception& ex)
+	{
+		std::cout << "Error:" << ex.what();
+	}
 }
