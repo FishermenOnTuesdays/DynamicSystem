@@ -181,7 +181,7 @@ nlohmann::json Bifurcation(nlohmann::json& input_json)
 	//std::vector<std::map<std::string, std::vector<long double>>> trajectories(number_of_trajectories);
 	std::vector<std::vector<long double>> BifurcationMap(number_of_trajectories);
 	//std::vector<long double> parameter_values(number_of_trajectories);
-	//#pragma omp parallel for
+	#pragma omp parallel for
 	for (int i = 0; i < number_of_trajectories; i++)
 	{
 		long double parameter = input_data.range.first + i * input_data.step;
