@@ -478,7 +478,6 @@ namespace DynS
 			intactStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
 		}
 		this->point_of_trajectory = intactStep;
-		std::cout << this->dt << std::endl;
 		this->trajectory.push_back(this->point_of_trajectory);
 	}
 
@@ -542,7 +541,7 @@ namespace DynS
 			max_eigenvalue = fabsl(eigenvalues(i).real()) > max_eigenvalue ? fabsl(eigenvalues(i).real()) : max_eigenvalue;
 			min_eigenvalue = fabsl(eigenvalues(i).real()) < min_eigenvalue ? fabsl(eigenvalues(i).real()) : min_eigenvalue;
 		}
-		std::cout << max_eigenvalue << " " << min_eigenvalue << std::endl;
+		if (this->dt >= 1 / max_eigenvalue) return true;
 		return max_eigenvalue / min_eigenvalue > hard_number ? true : false;
 	}
 
@@ -551,6 +550,7 @@ namespace DynS
 		if (this->point_of_trajectory.norm() > 1e30)
 			throw InfinityTrajectoryException("Infinity trajectory");
 		bool is_hard = IsHard(100);
+		//std::cout << is_hard << std::endl;
 		if (is_hard/*Dynamic system is hard?*/)
 		{
 			//Make implementation
