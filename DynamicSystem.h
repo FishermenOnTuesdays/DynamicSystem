@@ -13,6 +13,7 @@ namespace Eigen
 {
 	using MatrixXld = Eigen::Matrix<long double, Dynamic, Dynamic>;
 	using VectorXld = Eigen::Matrix<long double, Dynamic, 1>;
+	using VectorXcld = Eigen::Matrix<std::complex<long double>, Dynamic, 1>;
 	using Vector2ld = Eigen::Matrix<long double, 2, 1>;
 	using Vector3ld = Eigen::Matrix<long double, 3, 1>;
 }
@@ -137,6 +138,12 @@ namespace DynS
 
 		//Calculate next point of trajectory dynamic system by explicit Runge-Kutta fourth-order method
 		void ExplicitRungeKuttaFourthOrder();
+
+		//Calculate next point of trajectory dynamic system by explicit Runge-Kutta fourth-order method
+		void ImplicitEuler();
+
+		//Determines whether the system is hard
+		bool IsHard(long double hard_number);
 
 		//Calculate next point of dynamic system trajectory 
 		void NextPointOfTrajectory();

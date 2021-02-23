@@ -455,9 +455,11 @@ namespace DynS
 	void DynamicSystem::AdaptiveExplicitRungeKuttaFourthOrder()
 	{
 		long double adaptive_dt = this->dt;
+		long double intactStepNorm = 0;
 	    Eigen::VectorXld intactStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
-		while (abs(intactStep.norm()) > 1e-2) {
+		while (abs(intactStep.norm() - intactStepNorm) > 1e-2) {
 			adaptive_dt /= 2; // Error is too large; decrease step size.
+			intactStepNorm = intactStep.norm();
 			intactStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
 		}
 		this->point_of_trajectory = intactStep;
@@ -495,35 +497,6 @@ namespace DynS
 	}
 	*/
 
-	const long double powl24 = powl(2, 4);
-
-	long double RichardsonExtrapolation4Error(long double smallerStepNorm, long double largerStepNorm) {
-		return abs(abs(powl24 * smallerStepNorm - largerStepNorm) / (powl24 - 1) - abs(smallerStepNorm));
-	}
-	///*
-	void DynamicSystem::AdaptiveExplicitRungeKuttaFourthOrder()
-	{
-		Eigen::VectorXld halfStep, intactStep; // , doubleStep;
-		long double halfStepNorm, intactStepNorm; //, doubleStepNorm;
-		halfStep = this->variableExplicitRungeKuttaFourthOrder(this->dt / 2, this->point_of_trajectory);
-		intactStep = this->variableExplicitRungeKuttaFourthOrder(this->dt, this->point_of_trajectory);
-		//doubleStep = this->variableExplicitRungeKuttaFourthOrder(this->dt * 2, this->point_of_trajectory);
-
-		halfStepNorm = halfStep.norm();
-		intactStepNorm = intactStep.norm();
-
-		long double richardsonExtrapolation4error = RichardsonExtrapolation4Error(halfStepNorm, intactStepNorm);
-		std::cout << halfStepNorm << std::endl;
-		std::cout << intactStepNorm << std::endl;
-		std::cout << this->point_of_trajectory << std::endl;
-		std::cout << richardsonExtrapolation4error << std::endl;
-		this->dt = 0.9 * (this->dt / 2) * powl((epsilon * 10000) / richardsonExtrapolation4error, 1. / 4.);
-		this->ExplicitRungeKuttaFourthOrder();
-		std::cout << this->dt << std::endl;
-		std::cout << this->point_of_trajectory << std::endl;
-	}
-	//*/
-
 	void DynamicSystem::ExplicitRungeKuttaFourthOrder()
 	{
 		Eigen::VectorXld k1, k2, k3, k4, buffer_point_of_trajectory;
@@ -539,19 +512,39 @@ namespace DynS
 		this->trajectory.push_back(this->point_of_trajectory);
 	}
 
+	void DynamicSystem::ImplicitEuler()
+	{
+		this->point_of_trajectory += (Eigen::MatrixXld::Identity(this->dimension, this->dimension) - this->jacobian_matrix * this->dt).inverse() * this->dt * f(this->point_of_trajectory);
+		this->trajectory.push_back(this->point_of_trajectory);
+	}
+
+	bool DynamicSystem::IsHard(long double hard_number)
+	{
+		Eigen::VectorXcld eigenvalues = this->jacobian_matrix.eigenvalues();
+		long double max_eigenvalue = fabsl(eigenvalues(0).real());
+		long double min_eigenvalue = fabsl(eigenvalues(0).real());
+		for (size_t i = 0; i < eigenvalues.size(); i++)
+		{
+			max_eigenvalue = fabsl(eigenvalues(i).real()) > max_eigenvalue ? fabsl(eigenvalues(i).real()) : max_eigenvalue;
+			min_eigenvalue = fabsl(eigenvalues(i).real()) < min_eigenvalue ? fabsl(eigenvalues(i).real()) : min_eigenvalue;
+		}
+		return max_eigenvalue / min_eigenvalue > hard_number ? true : false;
+	}
+
 	void DynamicSystem::NextPointOfTrajectory()
 	{
 		if (this->point_of_trajectory.norm() > 1e30)
 			throw InfinityTrajectoryException("Infinity trajectory");
-		if (false/*Dynamic system is hard?*/)
+		bool is_hard = false;//IsHard(100);
+		if (is_hard/*Dynamic system is hard?*/)
 		{
 			//Make implementation
-			/*switch (this->implicit_method)
+			switch (this->implicit_method)
 			{
 			case ImplicitNumericalMethod::EulerImplicit:
 				ImplicitEuler();
 				break;
-			}*/
+			}
 		}
 		else
 		{
