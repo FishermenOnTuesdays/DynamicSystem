@@ -74,6 +74,7 @@ namespace DynS
 		enum class ExplicitNumericalMethod
 		{
 			RungeKuttaFourthOrder,
+			AdaptiveRungeKuttaFourthOrder,
 			EulerExplicit
 		};
 		enum class ImplicitNumericalMethod
@@ -92,6 +93,9 @@ namespace DynS
 
 		//Returns a sequence of trajectory's points at given time
 		std::vector<Eigen::VectorXld> GetTrajectory(long double time);
+
+		//Returns a Time sequence of calculated trajectory
+		std::vector<long double> GetTimeSequence();
 
 		//Returns a spectrum of Lyapunov exponents this dynamic system
 		std::vector<long double> GetSpectrumLyapunov(long double time);
@@ -112,10 +116,24 @@ namespace DynS
 		//Return error comment
 		std::string GetErrorComment();
 
+		//Explicit method currently used
+		ExplicitNumericalMethod explicit_method = ExplicitNumericalMethod::RungeKuttaFourthOrder;
+
+		//Implicit method currently used
+		ImplicitNumericalMethod implicit_method = ImplicitNumericalMethod::EulerImplicit;
+
 		//Private methods:
 	private:
 		//Vector function defining a dynamic system
 		Eigen::VectorXld f(const Eigen::VectorXld& vector);
+
+		//Calculate and return next point of trajectory dynamic system by explicit Runge-Kutta fourth-order method
+		Eigen::VectorXld variableExplicitRungeKuttaFourthOrder(long double dt,
+			Eigen::VectorXld point_of_trajectory
+		);
+
+		//Calculate next point of trajectory dynamic system by explicit Runge-Kutta fourth-order method with Adaptive step
+		void AdaptiveExplicitRungeKuttaFourthOrder();
 
 		//Calculate next point of trajectory dynamic system by explicit Runge-Kutta fourth-order method
 		void ExplicitRungeKuttaFourthOrder();
@@ -137,17 +155,17 @@ namespace DynS
 		//Time integration step
 		long double dt = 0.01;
 
+		//Time
+		long double t = 0;
+		
 		//Current point of dynamic system trajectory
 		Eigen::VectorXld point_of_trajectory;
 
 		//Trajectory of dynamic system
 		std::vector<Eigen::VectorXld> trajectory;
 
-		//Explicit method currently used
-		ExplicitNumericalMethod explicit_method = ExplicitNumericalMethod::RungeKuttaFourthOrder;
-
-		//Implicit method currently used
-		ImplicitNumericalMethod implicit_method = ImplicitNumericalMethod::EulerImplicit;
+		//Time Sequence
+		std::vector<long double> timeSequence;
 
 		//Jacobian matrix in the current point of dynamic system trajectory
 		Eigen::MatrixXld jacobian_matrix;

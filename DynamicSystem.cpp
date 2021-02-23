@@ -240,11 +240,13 @@ namespace DynS
 	std::vector<Eigen::VectorXld> DynamicSystem::GetTrajectory(long double time)
 	{
 		bool is_infinity_trajectory = false;
-		for (size_t i = 0; i < static_cast<size_t>(time / this->dt); i++)
+		while (this->t <= time)
 		{
 			try
 			{
 				NextPointOfTrajectory();
+				this->t += this->dt;
+				this->timeSequence.push_back(this->t);
 			}
 			catch (InfinityTrajectoryException& ex)
 			{
@@ -253,6 +255,10 @@ namespace DynS
 			}
 		}
 		return this->trajectory;
+	}
+
+	std::vector<long double> DynamicSystem::GetTimeSequence() {
+		return this->timeSequence;
 	}
 
 	std::vector<long double> DynamicSystem::GetSpectrumLyapunov(long double time)
@@ -428,6 +434,67 @@ namespace DynS
 		return result_vector;
 	}
 
+	Eigen::VectorXld DynamicSystem::variableExplicitRungeKuttaFourthOrder(
+		long double dt,
+		Eigen::VectorXld point_of_trajectory
+	)
+	{
+		Eigen::VectorXld k1, k2, k3, k4, buffer_point_of_trajectory;
+		buffer_point_of_trajectory = point_of_trajectory;
+		k1 = f(buffer_point_of_trajectory);
+		buffer_point_of_trajectory = point_of_trajectory + k1 * dt / 2;
+		k2 = f(buffer_point_of_trajectory);
+		buffer_point_of_trajectory = point_of_trajectory + k2 * dt / 2;
+		k3 = f(buffer_point_of_trajectory);
+		buffer_point_of_trajectory = point_of_trajectory + k3 * dt;
+		k4 = f(buffer_point_of_trajectory);
+		return point_of_trajectory + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
+	}
+
+	///*
+	void DynamicSystem::AdaptiveExplicitRungeKuttaFourthOrder()
+	{
+		long double adaptive_dt = this->dt;
+	    Eigen::VectorXld intactStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
+		while (abs(intactStep.norm()) > 1e-2) {
+			adaptive_dt /= 2; // Error is too large; decrease step size.
+			intactStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
+		}
+		this->point_of_trajectory = intactStep;
+		std::cout << this->dt << std::endl;
+		this->trajectory.push_back(this->point_of_trajectory);
+	}
+	//*/
+
+	const long double powl24 = powl(2, 4);
+
+	long double RichardsonExtrapolation4Error(long double smallerStepNorm, long double largerStepNorm) {
+		return abs(abs(powl24 * smallerStepNorm - largerStepNorm) / (powl24 - 1) - abs(smallerStepNorm));
+	}
+	/*
+	void DynamicSystem::AdaptiveExplicitRungeKuttaFourthOrder()
+	{
+		Eigen::VectorXld halfStep, intactStep; // , doubleStep;
+		long double halfStepNorm, intactStepNorm; //, doubleStepNorm;
+		halfStep = this->variableExplicitRungeKuttaFourthOrder(this->dt / 2, this->point_of_trajectory);
+		intactStep = this->variableExplicitRungeKuttaFourthOrder(this->dt, this->point_of_trajectory);
+		//doubleStep = this->variableExplicitRungeKuttaFourthOrder(this->dt * 2, this->point_of_trajectory);
+
+		halfStepNorm = halfStep.norm();
+		intactStepNorm = intactStep.norm();
+
+		long double richardsonExtrapolation4error = RichardsonExtrapolation4Error(halfStepNorm, intactStepNorm);
+		std::cout << halfStepNorm << std::endl;
+		std::cout << intactStepNorm << std::endl;
+		std::cout << this->point_of_trajectory << std::endl;
+		std::cout << richardsonExtrapolation4error << std::endl;
+		this->dt = 0.9 * (this->dt / 2) * powl((epsilon * 10000) / richardsonExtrapolation4error, 1. / 4.);
+		this->ExplicitRungeKuttaFourthOrder();
+		std::cout << this->dt << std::endl;
+		std::cout << this->point_of_trajectory << std::endl;
+	}
+	*/
+
 	void DynamicSystem::ExplicitRungeKuttaFourthOrder()
 	{
 		Eigen::VectorXld k1, k2, k3, k4, buffer_point_of_trajectory;
@@ -467,6 +534,9 @@ namespace DynS
 					break;*/
 			case ExplicitNumericalMethod::RungeKuttaFourthOrder:
 				ExplicitRungeKuttaFourthOrder();
+				break;
+			case ExplicitNumericalMethod::AdaptiveRungeKuttaFourthOrder:
+				AdaptiveExplicitRungeKuttaFourthOrder();
 				break;
 			}
 		}
