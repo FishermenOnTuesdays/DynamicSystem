@@ -35,6 +35,7 @@ struct InputDataMain
 	long double dt;
 	std::vector<Eigen::VectorXld> trajectory;
 	std::vector<long double> planeEquation;
+	int ExplicitNumericalMethodCode;
 };
 
 struct OutputDataMain
@@ -47,6 +48,7 @@ struct OutputDataMain
 	std::vector<Eigen::Vector2ld> intersections2D;
 	long double dt;
 	std::string comment;
+	std::vector<long double> timeSequence;
 };
 
 void from_json(const nlohmann::json& json, InputDataMain& input_data)
@@ -61,6 +63,7 @@ void from_json(const nlohmann::json& json, InputDataMain& input_data)
 		json.at("additional equations").get_to(input_data.additional_equations);
 		json.at("time").get_to(input_data.time);
 		json.at("dt").get_to(input_data.dt);
+		json.at("ExplicitNumericalMethodCode").get_to(input_data.ExplicitNumericalMethodCode);
 	}
 	catch (nlohmann::json::out_of_range & ex) {}
 	try {
@@ -100,13 +103,13 @@ void to_json(nlohmann::json& json, const OutputDataMain& output_data)
 	std::vector<std::string> variables(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
 	for (auto variable : variables)
 		trajectory.emplace(variable, std::vector<long double>{});
-	trajectory.emplace("t", std::vector<long double>{});
+	trajectory.emplace("t", output_data.timeSequence);
 	long double time = 0;
 	for (const auto& point : output_data.trajectory)
 	{
 		for (size_t i = 0; i < variables.size(); i++)
 			trajectory[variables[i]].push_back(point(i));
-		trajectory["t"].push_back(time);
+		//trajectory["t"].push_back(time);
 		time += output_data.dt;
 	}
 	// intersections3D
@@ -142,7 +145,22 @@ nlohmann::json Main(nlohmann::json& input_json)
 	OutputDataMain output_data{};
 	DynS::DynamicSystem dynamic_system{ input_data.starting_values, input_data.functions, input_data.variables, input_data.additional_equations };
 	dynamic_system.SetDt(input_data.dt);
+	switch (input_data.ExplicitNumericalMethodCode)
+	{
+		case 0:
+			dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::RungeKuttaFourthOrder;
+			break;
+		case 1:
+			dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::AdaptiveRungeKuttaFourthOrder;
+			break;
+		case 2:
+			dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::EulerExplicit;
+			break;
+		default:
+			break;
+	}
 	output_data.trajectory = dynamic_system.GetTrajectory(input_data.time);
+	output_data.timeSequence = dynamic_system.GetTimeSequence();
 	output_data.comment = dynamic_system.GetErrorComment();
 	if(output_data.comment == "Infinity trajectory")
 		dynamic_system.SetCurrentPointOfTrajectory(input_data.starting_values);
