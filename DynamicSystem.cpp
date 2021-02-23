@@ -451,7 +451,7 @@ namespace DynS
 		return point_of_trajectory + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
 	}
 
-	///*
+	/*
 	void DynamicSystem::AdaptiveExplicitRungeKuttaFourthOrder()
 	{
 		long double adaptive_dt = this->dt;
@@ -466,7 +466,21 @@ namespace DynS
 		std::cout << this->dt << std::endl;
 		this->trajectory.push_back(this->point_of_trajectory);
 	}
-	//*/
+	*/
+	void DynamicSystem::AdaptiveExplicitRungeKuttaFourthOrder()
+	{
+		long double adaptive_dt = this->dt;
+		long double intactStepNorm = 0;
+		Eigen::VectorXld intactStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
+		while (abs(intactStep.norm() - intactStepNorm) > 1e-2) {
+			adaptive_dt /= 2; // Error is too large; decrease step size.
+			intactStepNorm = intactStep.norm();
+			intactStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
+		}
+		this->point_of_trajectory = intactStep;
+		std::cout << this->dt << std::endl;
+		this->trajectory.push_back(this->point_of_trajectory);
+	}
 
 	const long double powl24 = powl(2, 4);
 
@@ -528,6 +542,7 @@ namespace DynS
 			max_eigenvalue = fabsl(eigenvalues(i).real()) > max_eigenvalue ? fabsl(eigenvalues(i).real()) : max_eigenvalue;
 			min_eigenvalue = fabsl(eigenvalues(i).real()) < min_eigenvalue ? fabsl(eigenvalues(i).real()) : min_eigenvalue;
 		}
+		std::cout << max_eigenvalue << " " << min_eigenvalue << std::endl;
 		return max_eigenvalue / min_eigenvalue > hard_number ? true : false;
 	}
 
@@ -535,7 +550,7 @@ namespace DynS
 	{
 		if (this->point_of_trajectory.norm() > 1e30)
 			throw InfinityTrajectoryException("Infinity trajectory");
-		bool is_hard = false;//IsHard(100);
+		bool is_hard = IsHard(100);
 		if (is_hard/*Dynamic system is hard?*/)
 		{
 			//Make implementation

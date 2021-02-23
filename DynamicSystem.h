@@ -7,7 +7,7 @@
 #include <string>
 #include "fparser.hh"
 #include "Eigen/Dense"
-#include "eigen-3.3.7/unsupported/Eigen/MatrixFunctions"
+#include "unsupported/Eigen/MatrixFunctions"
 
 namespace Eigen
 {
