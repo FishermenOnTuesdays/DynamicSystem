@@ -284,7 +284,7 @@ namespace DynS
 				variation_matrix += this->dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
 				try
 				{
-					NextPointOfTrajectory();
+					NextPointOfTrajectory(true); // forced to be static dt
 				}
 				catch (std::exception& ex)
 				{
@@ -334,7 +334,7 @@ namespace DynS
 					buffer_variation = variation_matrix + k3 * this->dt;
 					k4 = this->jacobian_matrix * buffer_variation;
 					variation_matrix += this->dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
-					NextPointOfTrajectory();
+					NextPointOfTrajectory(true); // forced to be static dt
 				}
 				auto QR = variation_matrix.householderQr();
 				Eigen::VectorXld diagonal = QR.matrixQR().diagonal();
@@ -451,34 +451,72 @@ namespace DynS
 		return point_of_trajectory + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
 	}
 
+	Eigen::VectorXld DynamicSystem::IncrementExplicitRungeKuttaFourthOrder(
+		long double dt,
+		Eigen::VectorXld point_of_trajectory
+	)
+	{
+		Eigen::VectorXld k1, k2, k3, k4, buffer_point_of_trajectory;
+		buffer_point_of_trajectory = point_of_trajectory;
+		k1 = f(buffer_point_of_trajectory);
+		buffer_point_of_trajectory = point_of_trajectory + k1 * dt / 2;
+		k2 = f(buffer_point_of_trajectory);
+		buffer_point_of_trajectory = point_of_trajectory + k2 * dt / 2;
+		k3 = f(buffer_point_of_trajectory);
+		buffer_point_of_trajectory = point_of_trajectory + k3 * dt;
+		k4 = f(buffer_point_of_trajectory);
+		return dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
+	}
+
 	/*
 	void DynamicSystem::AdaptiveExplicitRungeKuttaFourthOrder()
 	{
+		long double eps = 1e-3;
 		long double adaptive_dt = this->dt;
-		long double intactStepNorm = 0;
-	    Eigen::VectorXld intactStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
-		while (abs(intactStep.norm() - intactStepNorm) > 1e-2) {
-			adaptive_dt /= 2; // Error is too large; decrease step size.
-			intactStepNorm = intactStep.norm();
-			intactStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
+		Eigen::VectorXld intactStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
+		long double intactStepNorm = intactStep.norm();
+		Eigen::VectorXld newStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt * 2, this->point_of_trajectory);
+		if (abs(newStep.norm() - intactStepNorm) / abs(intactStepNorm) < eps) {
+			adaptive_dt *= 2;
+			// try increase dt
+			while (abs(newStep.norm() - intactStepNorm) / abs(intactStepNorm) < eps) {
+				adaptive_dt *= 2; // Error is ok; increase step size.
+				newStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
+			}
 		}
-		this->point_of_trajectory = intactStep;
-		std::cout << this->dt << std::endl;
+		else {
+			newStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt / 2, this->point_of_trajectory);
+			while (abs(newStep.norm() - intactStepNorm) / abs(intactStepNorm) > eps) {
+				adaptive_dt /= 2; // Error is too large; decrease step size.
+				newStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
+			}
+		}
+		this->point_of_trajectory = newStep;
 		this->trajectory.push_back(this->point_of_trajectory);
 	}
 	*/
+	/*
 	void DynamicSystem::AdaptiveExplicitRungeKuttaFourthOrder()
 	{
-		long double adaptive_dt = this->dt;
+		//long double adaptive_dt = this->dt;
 		long double intactStepNorm = 0;
-		Eigen::VectorXld intactStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
+		Eigen::VectorXld intactStep = this->variableExplicitRungeKuttaFourthOrder(this->dt, this->point_of_trajectory);
 		while (abs(intactStep.norm() - intactStepNorm) > 1e-2) {
-			adaptive_dt /= 2; // Error is too large; decrease step size.
+			this->dt /= 2; // Error is too large; decrease step size.
 			intactStepNorm = intactStep.norm();
-			intactStep = this->variableExplicitRungeKuttaFourthOrder(adaptive_dt, this->point_of_trajectory);
+			intactStep = this->variableExplicitRungeKuttaFourthOrder(this->dt, this->point_of_trajectory);
 		}
+		//this->dt = adaptive_dt;
 		this->point_of_trajectory = intactStep;
 		this->trajectory.push_back(this->point_of_trajectory);
+	}
+	*/
+	void DynamicSystem::FixedVExplicitRungeKuttaFourthOrder()
+	{
+		long double fixedStep = 1e-2;
+		Eigen::VectorXld intactStep = this->IncrementExplicitRungeKuttaFourthOrder(this->dt, this->point_of_trajectory);
+		this->dt *= fixedStep / intactStep.norm();
+		this->ExplicitRungeKuttaFourthOrder();
 	}
 
 	const long double powl24 = powl(2, 4);
@@ -486,7 +524,7 @@ namespace DynS
 	long double RichardsonExtrapolation4Error(long double smallerStepNorm, long double largerStepNorm) {
 		return abs(abs(powl24 * smallerStepNorm - largerStepNorm) / (powl24 - 1) - abs(smallerStepNorm));
 	}
-	/*
+	
 	void DynamicSystem::AdaptiveExplicitRungeKuttaFourthOrder()
 	{
 		Eigen::VectorXld halfStep, intactStep; // , doubleStep;
@@ -499,16 +537,9 @@ namespace DynS
 		intactStepNorm = intactStep.norm();
 
 		long double richardsonExtrapolation4error = RichardsonExtrapolation4Error(halfStepNorm, intactStepNorm);
-		std::cout << halfStepNorm << std::endl;
-		std::cout << intactStepNorm << std::endl;
-		std::cout << this->point_of_trajectory << std::endl;
-		std::cout << richardsonExtrapolation4error << std::endl;
 		this->dt = 0.9 * (this->dt / 2) * powl((epsilon * 10000) / richardsonExtrapolation4error, 1. / 4.);
 		this->ExplicitRungeKuttaFourthOrder();
-		std::cout << this->dt << std::endl;
-		std::cout << this->point_of_trajectory << std::endl;
 	}
-	*/
 
 	void DynamicSystem::ExplicitRungeKuttaFourthOrder()
 	{
@@ -545,9 +576,9 @@ namespace DynS
 		return max_eigenvalue / min_eigenvalue > hard_number ? true : false;
 	}
 
-	void DynamicSystem::NextPointOfTrajectory()
+	void DynamicSystem::NextPointOfTrajectory(bool ForceStaticDt)
 	{
-		if (this->point_of_trajectory.norm() > 1e30)
+		if (this->point_of_trajectory.norm() > 1e100)
 			throw InfinityTrajectoryException("Infinity trajectory");
 		bool is_hard = IsHard(100);
 		//std::cout << is_hard << std::endl;
@@ -563,18 +594,26 @@ namespace DynS
 		}
 		else
 		{
-			switch (this->explicit_method)
-			{
-				//Make implementation
-				/*case ExplicitNumericalMethod::EulerExplicit:
-					ExplicitEuler();
-					break;*/
-			case ExplicitNumericalMethod::RungeKuttaFourthOrder:
+			if (ForceStaticDt) {
 				ExplicitRungeKuttaFourthOrder();
-				break;
-			case ExplicitNumericalMethod::AdaptiveRungeKuttaFourthOrder:
-				AdaptiveExplicitRungeKuttaFourthOrder();
-				break;
+			}
+			else {
+				switch (this->explicit_method)
+				{
+					//Make implementation
+					/*case ExplicitNumericalMethod::EulerExplicit:
+						ExplicitEuler();
+						break;*/
+				case ExplicitNumericalMethod::RungeKuttaFourthOrder:
+					ExplicitRungeKuttaFourthOrder();
+					break;
+				case ExplicitNumericalMethod::AdaptiveRungeKuttaFourthOrder:
+					AdaptiveExplicitRungeKuttaFourthOrder();
+					break;
+				case ExplicitNumericalMethod::FixedVRungeKuttaFourthOrder:
+					FixedVExplicitRungeKuttaFourthOrder();
+					break;
+				}
 			}
 		}
 		CalculateJacobianMatrix();

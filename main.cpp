@@ -105,16 +105,18 @@ void to_json(nlohmann::json& json, const OutputDataMain& output_data)
 		trajectory.emplace(variable, std::vector<long double>{});
 	trajectory.emplace("t", std::vector<long double>{});
 	//long double time = 0;
-	int counter = 0;
-	const int maxtrajlen = 100000;
 	int trajlen = output_data.trajectory.size();
-	int step = floor(trajlen / maxtrajlen);
-	if (step < 1) step = 1;
-	for (int counter = 0; counter < output_data.trajectory.size() - 1; counter+=step) {
-		Eigen::VectorXld point = output_data.trajectory[counter];
-		for (size_t i = 0; i < variables.size(); i++)
-			trajectory[variables[i]].push_back(point(i));
-		trajectory["t"].push_back(output_data.timeSequence[counter]);
+	if (trajlen > 0) {
+		int counter = 0;
+		const int maxtrajlen = 100000;
+		int step = floor(trajlen / maxtrajlen);
+		if (step < 1) step = 1;
+		for (int counter = 0; counter < output_data.trajectory.size() - 1; counter += step) {
+			Eigen::VectorXld point = output_data.trajectory[counter];
+			for (size_t i = 0; i < variables.size(); i++)
+				trajectory[variables[i]].push_back(point(i));
+			trajectory["t"].push_back(output_data.timeSequence[counter]);
+		}
 	}
 	// intersections3D
 	std::vector<std::vector<long double>> intersections3D;
@@ -158,6 +160,9 @@ nlohmann::json Main(nlohmann::json& input_json)
 			dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::AdaptiveRungeKuttaFourthOrder;
 			break;
 		case 2:
+			dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::FixedVRungeKuttaFourthOrder;
+			break;
+		case 3:
 			dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::EulerExplicit;
 			break;
 		default:
@@ -168,6 +173,7 @@ nlohmann::json Main(nlohmann::json& input_json)
 	output_data.comment = dynamic_system.GetErrorComment();
 	if(output_data.comment == "Infinity trajectory")
 		dynamic_system.SetCurrentPointOfTrajectory(input_data.starting_values);
+	dynamic_system.SetDt(input_data.dt);
 	output_data.series_of_spectrum_lyapunov_exponents = dynamic_system.GetTimeSeriesSpectrumLyapunov(input_data.time);
 	output_data.variables = input_data.variables;
 	output_data.dt = input_data.dt;
