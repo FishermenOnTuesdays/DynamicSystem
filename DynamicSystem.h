@@ -76,6 +76,7 @@ namespace DynS
 		{
 			RungeKuttaFourthOrder,
 			AdaptiveRungeKuttaFourthOrder,
+			FixedVRungeKuttaFourthOrder,
 			EulerExplicit
 		};
 		enum class ImplicitNumericalMethod
@@ -133,6 +134,15 @@ namespace DynS
 			Eigen::VectorXld point_of_trajectory
 		);
 
+		//Calculate and return increment of trajectory dynamic system by explicit Runge-Kutta fourth-order method
+		Eigen::VectorXld IncrementExplicitRungeKuttaFourthOrder(
+			long double dt,
+			Eigen::VectorXld point_of_trajectory
+		);
+
+		//Calculate next point of trajectory dynamic system by explicit Runge-Kutta fourth-order method with Fixed Velocity step
+		void FixedVExplicitRungeKuttaFourthOrder();
+
 		//Calculate next point of trajectory dynamic system by explicit Runge-Kutta fourth-order method with Adaptive step
 		void AdaptiveExplicitRungeKuttaFourthOrder();
 
@@ -146,7 +156,7 @@ namespace DynS
 		bool IsHard();
 
 		//Calculate next point of dynamic system trajectory 
-		void NextPointOfTrajectory();
+		void NextPointOfTrajectory(bool FORCESTATICDT = false);
 
 		//Calculate Jacobian matrix in current point of dynamic system trajectory 
 		void CalculateJacobianMatrix();
