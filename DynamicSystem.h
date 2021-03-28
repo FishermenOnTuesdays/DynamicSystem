@@ -143,7 +143,7 @@ namespace DynS
 		void ImplicitEuler();
 
 		//Determines whether the system is hard
-		bool IsHard(long double hard_number);
+		bool IsHard();
 
 		//Calculate next point of dynamic system trajectory 
 		void NextPointOfTrajectory();

@@ -226,6 +226,7 @@ namespace DynS
 			sum_all_functions.pop_back();
 			parser_for_variables.ParseAndDeduceVariables(additional_variables + sum_all_functions, variables);
 		}
+		variables += ",t";
 		for (auto function : strings_functions)
 		{
 			FunctionParser_ld function_parser;
@@ -286,14 +287,11 @@ namespace DynS
 				{
 					NextPointOfTrajectory();
 				}
-				catch (std::exception& ex)
+				catch (InfinityTrajectoryException& ex)
 				{
-					if (ex.what() == "Infinity trajectory")
-					{
-						for (size_t k = 0; k < this->dimension; k++)
-							spectrum_of_lyapunov_exponents.push_back(sums_of_logarithms[k] / i / T / this->dt);
-						return spectrum_of_lyapunov_exponents;
-					}
+					for (size_t k = 0; k < this->dimension; k++)
+						spectrum_of_lyapunov_exponents.push_back(sums_of_logarithms[k] / i / T / this->dt);
+					return spectrum_of_lyapunov_exponents;
 				}
 			}
 			auto QR = variation_matrix.householderQr();
@@ -427,6 +425,9 @@ namespace DynS
 
 	Eigen::VectorXld DynamicSystem::f(const Eigen::VectorXld& vector)
 	{
+		Eigen::VectorXld vector_with_time = vector;
+		vector_with_time.conservativeResize(vector.size() + 1);
+		vector_with_time[vector.size()] = this->t;
 		Eigen::VectorXld result_vector(this->dimension);
 		size_t i = 0;
 		for (auto& function : this->functions)
@@ -531,27 +532,25 @@ namespace DynS
 		this->trajectory.push_back(this->point_of_trajectory);
 	}
 
-	bool DynamicSystem::IsHard(long double hard_number)
+	bool DynamicSystem::IsHard()
 	{
 		Eigen::VectorXcld eigenvalues = this->jacobian_matrix.eigenvalues();
 		long double max_eigenvalue = fabsl(eigenvalues(0).real());
-		long double min_eigenvalue = fabsl(eigenvalues(0).real());
+		//long double min_eigenvalue = fabsl(eigenvalues(0).real());
 		for (size_t i = 0; i < eigenvalues.size(); i++)
 		{
 			max_eigenvalue = fabsl(eigenvalues(i).real()) > max_eigenvalue ? fabsl(eigenvalues(i).real()) : max_eigenvalue;
-			min_eigenvalue = fabsl(eigenvalues(i).real()) < min_eigenvalue ? fabsl(eigenvalues(i).real()) : min_eigenvalue;
+			//min_eigenvalue = fabsl(eigenvalues(i).real()) < min_eigenvalue ? fabsl(eigenvalues(i).real()) : min_eigenvalue;
 		}
-		if (this->dt >= 1 / max_eigenvalue) return true;
-		return max_eigenvalue / min_eigenvalue > hard_number ? true : false;
+		return this->dt > 1. / max_eigenvalue;
+		//return max_eigenvalue / min_eigenvalue > hard_number ? true : false;
 	}
 
 	void DynamicSystem::NextPointOfTrajectory()
 	{
 		if (this->point_of_trajectory.norm() > 1e30)
 			throw InfinityTrajectoryException("Infinity trajectory");
-		bool is_hard = IsHard(100);
-		//std::cout << is_hard << std::endl;
-		if (is_hard/*Dynamic system is hard?*/)
+		if (this->IsHard()/*Dynamic system is hard?*/)
 		{
 			//Make implementation
 			switch (this->implicit_method)
@@ -583,13 +582,16 @@ namespace DynS
 	void DynamicSystem::CalculateJacobianMatrix()
 	{
 		this->jacobian_matrix = Eigen::MatrixXld::Zero(this->dimension, this->dimension);
+		Eigen::VectorXld point_of_trajectory_with_time = this->point_of_trajectory;
+		point_of_trajectory_with_time.conservativeResize(this->point_of_trajectory.size() + 1);
+		point_of_trajectory_with_time[this->dimension] = this->t;
 		for (size_t i = 0; i < this->dimension; i++)
 		{
 			for (size_t j = 0; j < this->dimension; j++)
 			{
-				Eigen::VectorXld left_point = this->point_of_trajectory;
+				Eigen::VectorXld left_point = point_of_trajectory_with_time;
 				left_point(j) -= this->epsilon;
-				Eigen::VectorXld right_point = this->point_of_trajectory;
+				Eigen::VectorXld right_point = point_of_trajectory_with_time;
 				right_point(j) += this->epsilon;
 				this->jacobian_matrix(i, j) =
 					(this->functions[i].Eval(right_point.data()) -
