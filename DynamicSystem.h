@@ -1,3 +1,13 @@
+﻿//                                  
+//                                   
+//                                   ██████╗ ██╗   ██╗███╗   ██╗███████╗
+//                                   ██╔══██╗╚██╗ ██╔╝████╗  ██║██╔════╝
+//                                   ██║  ██║ ╚████╔╝ ██╔██╗ ██║███████╗
+//                                   ██║  ██║  ╚██╔╝  ██║╚██╗██║╚════██║
+//                                   ██████╔╝   ██║   ██║ ╚████║███████║
+//                                   ╚═════╝    ╚═╝   ╚═╝  ╚═══╝╚══════╝
+//                                                     
+
 #pragma once
 #include <iostream>
 #include <functional>
@@ -112,6 +122,12 @@ namespace DynS
 		//Set dt for this dynamic system
 		void SetDt(long double dt);
 
+		//Set time for this dynamic system
+		void SetTime(long double time);
+
+		//Reset dynamic system (clear trajectory and time sequence, set time to zero and set current point of trajectory)
+		void Reset(Eigen::VectorXld current_point);
+
 		//Set current point of dynamic system trajectory
 		void SetCurrentPointOfTrajectory(Eigen::VectorXld current_point);
 
@@ -130,7 +146,8 @@ namespace DynS
 		Eigen::VectorXld f(const Eigen::VectorXld& vector);
 
 		//Calculate and return next point of trajectory dynamic system by explicit Runge-Kutta fourth-order method
-		Eigen::VectorXld variableExplicitRungeKuttaFourthOrder(long double dt,
+		Eigen::VectorXld variableExplicitRungeKuttaFourthOrder(
+			long double dt,
 			Eigen::VectorXld point_of_trajectory
 		);
 
@@ -193,5 +210,49 @@ namespace DynS
 		//Error comment:
 		std::string comment = "";
 	};
+	
+	class PartialDifferentialEquation
+	{
+		//Public methods
+	public:
+		//Create a partial differential equation with cooficient functions and boundary equations
+		PartialDifferentialEquation(
+			const std::vector<std::string>& strings_boundary_functions, 
+			long double first_value_parameter, 
+			long double second_value_parameter, 
+			long double step_along_border, 
+			const std::vector<std::string>& strings_functions_coefficients, 
+			std::string variables = "", 
+			std::string additional_variables = "", 
+			long double dt = 0.01
+		);
 
+		//Calculate a solution of current partial differential equation through desired time
+		std::vector<std::vector<Eigen::VectorXld>> GetSolution(long double time);
+
+		//Returns a Time sequence of solution
+		std::vector<long double> GetTimeSequence();
+
+		//Private methods
+	private:
+		//Return a value of boundary function in this coordinates
+		Eigen::VectorXld BoundaryFunction(long double coordinates);
+
+		//Variables
+	private:
+		//Equavelent characteristic ODE system
+		DynamicSystem* dynamic_system;
+		
+		//Left side of boundary curve
+		long double first_value_parameter;
+
+		//Right side of a boundary curve
+		long double second_value_parameter;
+
+		//Step along a boundary curve
+		long double step_along_border;
+
+		//System of boundary functions in parametric form
+		std::vector<FunctionParser_ld> boundary_functions;
+	};
 }

@@ -409,6 +409,19 @@ namespace DynS
 		this->dt = dt;
 	}
 
+	void DynamicSystem::SetTime(long double time)
+	{
+		this->t = time;
+	}
+
+	void DynamicSystem::Reset(Eigen::VectorXld current_point)
+	{
+		this->trajectory.clear();
+		this->timeSequence.clear();
+		SetTime(0);
+		SetCurrentPointOfTrajectory(current_point);
+	}
+
 	void DynamicSystem::SetCurrentPointOfTrajectory(Eigen::VectorXld current_point)
 	{
 		this->point_of_trajectory = current_point;
@@ -421,6 +434,64 @@ namespace DynS
 		return this->comment;
 	}
 
+	PartialDifferentialEquation::PartialDifferentialEquation(
+		const std::vector<std::string>& strings_boundary_functions, 
+		long double first_value_parameter, 
+		long double second_value_parameter, 
+		long double step_along_border, 
+		const std::vector<std::string>& strings_functions_coefficients, 
+		std::string variables, 
+		std::string additional_variables, 
+		long double dt
+	)
+		: first_value_parameter(first_value_parameter), second_value_parameter(second_value_parameter), step_along_border(step_along_border)
+	{
+		if (variables == "")//Defined variables
+		{
+			std::string sum_all_functions;
+			FunctionParser_ld parser_for_variables;
+			for (auto function : strings_functions_coefficients)
+				sum_all_functions += function + '+';
+			sum_all_functions.pop_back();
+			parser_for_variables.ParseAndDeduceVariables(additional_variables + sum_all_functions, variables);
+		}
+		std::string parameter;
+		std::string sum_all_functions;
+		FunctionParser_ld parser_for_variables;
+		for (auto function : strings_boundary_functions)
+			sum_all_functions += function + '+';
+		sum_all_functions.pop_back();
+		parser_for_variables.ParseAndDeduceVariables(additional_variables + sum_all_functions, parameter);
+		for (auto function : strings_boundary_functions)
+		{
+			FunctionParser_ld function_parser;
+			function_parser.Parse(additional_variables + function, parameter);
+			this->boundary_functions.push_back(function_parser);
+		}
+		Eigen::VectorXld staring_point = BoundaryFunction(first_value_parameter);
+		std::vector<std::string> strings_functions_dynamic_system;
+		for (auto iterator_coefficient = strings_functions_coefficients.begin() + 1; iterator_coefficient != strings_functions_coefficients.end(); iterator_coefficient++)
+			strings_functions_dynamic_system.push_back('(' + *iterator_coefficient + ")/(" + strings_functions_coefficients[0] + ')');
+		this->dynamic_system = new DynamicSystem(staring_point, strings_functions_dynamic_system, variables, additional_variables);
+		this->dynamic_system->SetDt(dt);
+	}
+
+	std::vector<std::vector<Eigen::VectorXld>> PartialDifferentialEquation::GetSolution(long double time)
+	{
+		std::vector<std::vector<Eigen::VectorXld>> solution_surface;
+		for (long double parameter = this->first_value_parameter; parameter < this->second_value_parameter; parameter += this->step_along_border)
+		{
+			this->dynamic_system->Reset(BoundaryFunction(parameter));
+			solution_surface.push_back(this->dynamic_system->GetTrajectory(time));
+		}
+		return solution_surface;
+	}
+
+	std::vector<long double> PartialDifferentialEquation::GetTimeSequence()
+	{
+		return this->dynamic_system->GetTimeSequence();
+	}
+
 	//Private methods:
 
 	Eigen::VectorXld DynamicSystem::f(const Eigen::VectorXld& vector)
@@ -431,7 +502,7 @@ namespace DynS
 		Eigen::VectorXld result_vector(this->dimension);
 		size_t i = 0;
 		for (auto& function : this->functions)
-			result_vector[i++] = function.Eval(vector.data());
+			result_vector[i++] = function.Eval(vector_with_time.data());
 		return result_vector;
 	}
 
@@ -637,5 +708,14 @@ namespace DynS
 						this->functions[i].Eval(left_point.data())) / (2 * this->epsilon);
 			}
 		}
+	}
+
+	Eigen::VectorXld PartialDifferentialEquation::BoundaryFunction(long double parameter)
+	{
+		Eigen::VectorXld result_vector(this->boundary_functions.size());
+		size_t i = 0;
+		for (auto& function : this->boundary_functions)
+			result_vector[i++] = function.Eval(&parameter);
+		return result_vector;
 	}
 }
