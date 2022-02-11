@@ -9,6 +9,7 @@
 //                                                     
 
 #pragma once
+
 #include <iostream>
 #include <functional>
 #include <vector>
@@ -18,6 +19,10 @@
 #include "fparser.hh"
 #include "Eigen/Dense"
 #include "unsupported/Eigen/MatrixFunctions"
+#include <igl/readOFF.h>
+#include <igl/decimate.h>
+#include <igl/writeOBJ.h>
+
 
 namespace Eigen
 {
@@ -78,6 +83,13 @@ namespace DynS
 	//Returns Bifurcation map from input trajectory
 	std::vector<long double> GetBifurcationMap(std::vector<Eigen::VectorXld> trajectory);
 
+	//Convert surface from trajectories to obj
+	//trajectories - array of trajectories with n-dimensional points
+	//axis_indexes - indexes of the x, y, z axes at the n-dimensional point of the trajectory
+	//name - the name of the .obj file
+	//path - the path to save the .obj file
+	void TrajectoriesToObj(const std::vector<std::vector<Eigen::VectorXld>>& trajectories, Eigen::Vector3i axis_indexes, std::string name = "surface", std::string path = "");
+
 	class DynamicSystem
 	{
 	public:
@@ -127,6 +139,9 @@ namespace DynS
 
 		//Reset dynamic system (clear trajectory and time sequence, set time to zero and set current point of trajectory)
 		void Reset(Eigen::VectorXld current_point);
+
+		//Reset dynamic system with time point on first position (clear trajectory and time sequence, set time to current time point and set current point of trajectory)
+		void ResetWithTime(Eigen::VectorXld current_point_with_time);
 
 		//Set current point of dynamic system trajectory
 		void SetCurrentPointOfTrajectory(Eigen::VectorXld current_point);
@@ -235,8 +250,11 @@ namespace DynS
 
 		//Private methods
 	private:
-		//Return a value of boundary function in this coordinates
-		Eigen::VectorXld BoundaryFunction(long double coordinates);
+		//Return a value of boundary function in this coordinates with time on first position
+		Eigen::VectorXld BoundaryFunctionWithTime(long double coordinates);
+
+		//Return a value of boundary function in this coordinates without time
+		Eigen::VectorXld BoundaryFunctionWithoutTime(long double coordinates);
 
 		//Variables
 	private:
@@ -254,5 +272,83 @@ namespace DynS
 
 		//System of boundary functions in parametric form
 		std::vector<FunctionParser_ld> boundary_functions;
+
+		//If the partial differential equation has time derivative it's true else it's false
+		bool with_time;
+	};
+
+	class HyperboliсPartialDifferentialEquation
+	{
+		//Public methods
+	public:
+		//Create a hyperboliс partial differential equation
+		//f - Function in front of compound derivative
+		//g - Function in front of derivative u
+		//phi - Initial offset
+		//psi - Initial velocity
+		//left_coefficients - Coefficients at the left end
+		//right_coefficients - Coefficients at the right end
+		//space_interval - Borders of space
+		//T - Simulation time
+		//h - Step in space
+		//tau - Step in time
+		HyperboliсPartialDifferentialEquation(
+			FunctionParser_ld f,
+			FunctionParser_ld g,
+			FunctionParser_ld phi,
+			FunctionParser_ld psi,
+			std::tuple<long double, long double, long double> left_coefficients,
+			std::tuple<long double, long double, long double> right_coefficients,
+			std::pair<long double, long double> space_interval,
+			long double T,
+			long double h,
+			long double tau
+		);
+
+		//Get solution of this hyperboliс partial differential equation by an explicit second-order method
+		Eigen::MatrixXld Solution();
+
+		//Private methods
+	private:
+		//Solve this hyperboliс partial differential equation by an explicit second-order method
+		void Solve();
+
+		//Variables
+	private:
+		//Step in space
+		long double h;
+
+		//Step in time
+		long double tau;
+
+		//Borders of space
+		std::pair<long double, long double> space_interval;
+
+		//Initial offset
+		FunctionParser_ld phi;
+
+		//Initial velocity
+		FunctionParser_ld psi;
+
+		//Coefficients at the left end
+		std::tuple<long double, long double, long double> left_coefficients;
+
+		//Coefficients at the right end
+		std::tuple<long double, long double, long double> right_coefficients;
+
+		//Simulation time
+		long double T;
+
+		//Function in front of compound derivative
+		FunctionParser_ld f;
+
+		//Function in front of derivative u
+		FunctionParser_ld g;
+
+		//Matrix of solution
+		Eigen::MatrixXld u;
+
+		//Indicates the presence of a solution
+		bool is_solved;
 	};
 }

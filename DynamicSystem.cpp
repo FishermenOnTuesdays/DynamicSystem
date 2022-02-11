@@ -211,6 +211,42 @@ namespace DynS
 		return intersections1;
 	}
 
+	void TrajectoriesToObj(const std::vector<std::vector<Eigen::VectorXld>>& trajectories, Eigen::Vector3i axis_indexes, std::string name, std::string path)
+	{
+		Eigen::MatrixXd vertices;
+		Eigen::MatrixXi faces;
+		Eigen::VectorXi list_of_indexes;
+		if (trajectories.size() == 0)
+			throw std::exception("No trajectories");
+		auto trajectory_with_min_size = *std::min_element(trajectories.begin(), trajectories.end(),
+			[](const std::vector<Eigen::VectorXld>& first_trajectory, const std::vector<Eigen::VectorXld>& second_trajectory)
+			{
+				return first_trajectory.size() < second_trajectory.size();
+			});
+		size_t min_size = trajectory_with_min_size.size();
+		if (min_size == 0)
+			throw std::exception("There is an empty trajectory");
+		if (trajectory_with_min_size[0].size() <= std::max({ axis_indexes[0], axis_indexes[1], axis_indexes[2] }))
+			throw std::exception("There is an inappropriate index");
+		vertices.resize(min_size * trajectories.size(), axis_indexes.size());
+		for (size_t i = 0; i < trajectories.size(); i++)
+			for (size_t j = 0; j < min_size; j++)
+				vertices.row(i * min_size + j) = Eigen::Vector3d(trajectories[i][j][axis_indexes[0]], trajectories[i][j][axis_indexes[1]], trajectories[i][j][axis_indexes[2]]);
+		faces.resize((min_size - 1) * (trajectories.size() - 1) * 2, axis_indexes.size());
+		size_t triangle_number = 0;
+		for (size_t i = 0; i < trajectories.size() - 1; i++)
+		{
+			for (size_t j = 0; j < min_size - 1; j++)
+			{
+				faces.row(triangle_number) = Eigen::Vector3i(j + min_size * i, j + min_size * (i + 1), j + 1 + min_size * i);
+				faces.row(triangle_number + 1) = Eigen::Vector3i(j + 1 + min_size * i, j + min_size * (i + 1), j + 1 + min_size * (i + 1));
+				triangle_number += 2;
+			}
+		}
+		igl::decimate(vertices, faces, 10000, vertices, faces, list_of_indexes);
+		igl::writeOBJ(path + name + ".obj", vertices, faces);
+	}
+
 	//Public methods:
 
 	DynamicSystem::DynamicSystem(const Eigen::VectorXld& starting_point, const std::vector<std::string>& strings_functions, std::string variables, std::string additional_variables)
@@ -416,9 +452,24 @@ namespace DynS
 
 	void DynamicSystem::Reset(Eigen::VectorXld current_point)
 	{
+		if (current_point.size() != this->dimension)
+			throw std::exception("current_point has invalid size");
 		this->trajectory.clear();
 		this->timeSequence.clear();
 		SetTime(0);
+		SetCurrentPointOfTrajectory(current_point);
+	}
+
+	void DynamicSystem::ResetWithTime(Eigen::VectorXld current_point_with_time)
+	{
+		if (current_point_with_time.size() != this->dimension + 1)
+			throw std::exception("current_point_with_time has invalid size");
+		this->trajectory.clear();
+		this->timeSequence.clear();
+		SetTime(current_point_with_time[0]);
+		Eigen::VectorXld current_point(this->dimension);
+		for (size_t i = 0; i < current_point.size(); i++)
+			current_point[i] = current_point_with_time[i + 1];
 		SetCurrentPointOfTrajectory(current_point);
 	}
 
@@ -468,11 +519,22 @@ namespace DynS
 			function_parser.Parse(additional_variables + function, parameter);
 			this->boundary_functions.push_back(function_parser);
 		}
-		Eigen::VectorXld staring_point = BoundaryFunction(first_value_parameter);
+		Eigen::VectorXld starting_point;
 		std::vector<std::string> strings_functions_dynamic_system;
-		for (auto iterator_coefficient = strings_functions_coefficients.begin() + 1; iterator_coefficient != strings_functions_coefficients.end(); iterator_coefficient++)
-			strings_functions_dynamic_system.push_back('(' + *iterator_coefficient + ")/(" + strings_functions_coefficients[0] + ')');
-		this->dynamic_system = new DynamicSystem(staring_point, strings_functions_dynamic_system, variables, additional_variables);
+		this->with_time = strings_functions_coefficients[0] == "0" ? false : true;
+		if (!this->with_time)
+		{
+			starting_point = BoundaryFunctionWithTime(first_value_parameter);
+			for (auto iterator_coefficient = strings_functions_coefficients.begin(); iterator_coefficient != strings_functions_coefficients.end(); iterator_coefficient++)
+				strings_functions_dynamic_system.push_back(*iterator_coefficient);
+		}
+		else
+		{
+			starting_point = BoundaryFunctionWithoutTime(first_value_parameter);
+			for (auto iterator_coefficient = strings_functions_coefficients.begin() + 1; iterator_coefficient != strings_functions_coefficients.end(); iterator_coefficient++)
+				strings_functions_dynamic_system.push_back('(' + *iterator_coefficient + ")/(" + strings_functions_coefficients[0] + ')');
+		}
+		this->dynamic_system = new DynamicSystem(starting_point, strings_functions_dynamic_system, variables, additional_variables);
 		this->dynamic_system->SetDt(dt);
 	}
 
@@ -481,8 +543,16 @@ namespace DynS
 		std::vector<std::vector<Eigen::VectorXld>> solution_surface;
 		for (long double parameter = this->first_value_parameter; parameter < this->second_value_parameter; parameter += this->step_along_border)
 		{
-			this->dynamic_system->Reset(BoundaryFunction(parameter));
-			solution_surface.push_back(this->dynamic_system->GetTrajectory(time));
+			if (this->with_time)
+			{
+				this->dynamic_system->ResetWithTime(BoundaryFunctionWithTime(parameter));
+				solution_surface.push_back(this->dynamic_system->GetTrajectory(time));
+			}
+			else
+			{
+				this->dynamic_system->Reset(BoundaryFunctionWithTime(parameter));
+				solution_surface.push_back(this->dynamic_system->GetTrajectory(time));
+			}
 		}
 		return solution_surface;
 	}
@@ -692,8 +762,9 @@ namespace DynS
 	void DynamicSystem::CalculateJacobianMatrix()
 	{
 		this->jacobian_matrix = Eigen::MatrixXld::Zero(this->dimension, this->dimension);
-		Eigen::VectorXld point_of_trajectory_with_time = this->point_of_trajectory;
-		point_of_trajectory_with_time.conservativeResize(this->point_of_trajectory.size() + 1);
+		Eigen::VectorXld point_of_trajectory_with_time(this->dimension + 1);
+		for (size_t i = 0; i < this->dimension; i++)
+			point_of_trajectory_with_time[i] = this->point_of_trajectory[i];
 		point_of_trajectory_with_time[this->dimension] = this->t;
 		for (size_t i = 0; i < this->dimension; i++)
 		{
@@ -710,12 +781,165 @@ namespace DynS
 		}
 	}
 
-	Eigen::VectorXld PartialDifferentialEquation::BoundaryFunction(long double parameter)
+	Eigen::VectorXld PartialDifferentialEquation::BoundaryFunctionWithTime(long double parameter)
 	{
 		Eigen::VectorXld result_vector(this->boundary_functions.size());
 		size_t i = 0;
 		for (auto& function : this->boundary_functions)
 			result_vector[i++] = function.Eval(&parameter);
 		return result_vector;
+	}
+
+	Eigen::VectorXld PartialDifferentialEquation::BoundaryFunctionWithoutTime(long double parameter)
+	{
+		Eigen::VectorXld result_vector(this->boundary_functions.size());
+		size_t i = -1;
+		for (auto& function : this->boundary_functions)
+		{
+			if (i == -1)
+			{
+				i++;
+				continue;
+			}
+			result_vector[i++] = function.Eval(&parameter);
+		}
+		return result_vector;
+	}
+
+	//HyperboliñPartialDifferentialEquation
+
+	HyperboliñPartialDifferentialEquation::HyperboliñPartialDifferentialEquation(
+		FunctionParser_ld f, FunctionParser_ld g, FunctionParser_ld phi, FunctionParser_ld psi, 
+		std::tuple<long double, long double, long double> left_coefficients, 
+		std::tuple<long double, long double, long double> right_coefficients, 
+		std::pair<long double, long double> space_interval, 
+		long double T, long double h, long double tau) :
+		f(f), g(g), phi(phi), psi(psi), left_coefficients(left_coefficients), h(h), tau(tau),
+		right_coefficients(right_coefficients), space_interval(space_interval), T(T)
+	{
+		if (2 * this->h * std::get<1>(this->left_coefficients) 
+			- 
+			3 * std::get<0>(this->left_coefficients) < DBL_EPSILON)
+			this->h /= 2;
+		if (2 * this->h * std::get<1>(this->right_coefficients) 
+			+ 
+			3 * std::get<0>(this->right_coefficients) < DBL_EPSILON)
+			this->h /= 2;
+
+		if (this->h < DBL_EPSILON)
+			throw(std::exception("Very small step"));
+
+		long double first_x = this->space_interval.first + this->h;
+		long double next_first_x = this->space_interval.first + 2*this->h;
+		long double previous_first_x = this->space_interval.first;
+		long double minimum = this->f.Eval(&first_x) * this->g.Eval(&first_x);
+		long double maximum = std::powl(this->f.Eval(&first_x)*
+			(this->g.Eval(&next_first_x) - this->g.Eval(&previous_first_x) / 4), 2)
+			+
+			std::powl(this->f.Eval(&first_x) * this->g.Eval(&first_x), 2);
+		for (long double x = this->space_interval.first + 2*this->h;
+			x < this->space_interval.second;
+			x += this->h)
+		{
+			long double next_x = x + this->h;
+			long double previous_x = x - this->h;
+			long double right_expression = this->f.Eval(&x) * this->g.Eval(&x);
+			long double left_expression = std::powl(this->f.Eval(&x) *
+				(this->g.Eval(&next_x) - this->g.Eval(&previous_x) / 4), 2)
+				+
+				std::powl(this->f.Eval(&x) * this->g.Eval(&x), 2);
+			minimum = right_expression < minimum ? right_expression : minimum;
+			maximum = left_expression > maximum ? left_expression : maximum;
+		}
+
+		if (maximum < DBL_EPSILON)
+			this->tau = this->h;
+		else
+		{
+			if (this->tau * this->tau >= minimum / maximum * this->h * this->h)
+			{
+				if (minimum / maximum > 0)
+				{
+					this->tau = sqrtl(minimum / maximum) * this->h / 2;
+				}
+				else
+				{
+					throw(std::exception("This problem is not solved by this scheme."));
+				}
+			}
+		}
+
+		if (this->tau < DBL_EPSILON)
+			throw(std::exception("Very small step"));
+
+		this->u = Eigen::MatrixXld::Zero(this->T / this->tau + 1,
+			(this->space_interval.second - this->space_interval.first) / this->h + 1);
+
+		this->is_solved = false;
+	}
+
+	Eigen::MatrixXld HyperboliñPartialDifferentialEquation::Solution()
+	{
+		if(!this->is_solved)
+			Solve();
+		return this->u;
+	}
+
+	void HyperboliñPartialDifferentialEquation::Solve()
+	{
+		long double x = this->space_interval.first;
+		long double next_x = this->space_interval.first + this->h;
+		long double previous_x = this->space_interval.first - this->h;
+		for (size_t n = 0; n < this->u.cols(); n++)
+		{
+			this->u(0, n) = this->phi.Eval(&x);
+			this->u(1, n) = this->phi.Eval(&x) + this->tau * this->psi.Eval(&x) +
+				this->f.Eval(&x) *
+				((this->g.Eval(&next_x) - this->g.Eval(&previous_x)) /
+					(2 * this->h) *
+					(this->phi.Eval(&next_x) - this->phi.Eval(&previous_x)) /
+					(2 * this->h)
+					+
+					this->g.Eval(&x) * (this->phi.Eval(&next_x) -
+						2 * this->phi.Eval(&x) +
+						this->phi.Eval(&previous_x)) / (this->h * this->h));
+			x += this->h;
+			next_x += this->h;
+			previous_x += this->h;
+		}
+		for (size_t m = 2; m < this->u.rows(); m++)
+		{
+			x = this->space_interval.first + this->h;
+			next_x = this->space_interval.first + 2 * this->h;
+			previous_x = this->space_interval.first;
+			for (size_t n = 1; n < this->u.cols() - 1; n++)
+			{
+				this->u(m, n) = 2 * this->u(m - 1, n) - this->u(m - 2, n) +
+					this->tau * this->tau * this->f.Eval(&x) * (
+						(this->g.Eval(&next_x) - this->g.Eval(&previous_x)) *
+						(this->u(m - 1, n + 1) - this->u(m - 1, n - 1)) /
+						(4 * this->h * this->h)
+						+
+						this->g.Eval(&x) *
+						(this->u(m - 1, n + 1) -
+							2 * this->u(m - 1, n) +
+							this->u(m - 1, n - 1)) /
+						(this->h * this->h));
+				x += this->h;
+				next_x += this->h;
+				previous_x += this->h;
+			}
+			this->u(m, 0) = (std::get<0>(this->left_coefficients) *
+				(this->u(m, 2) - 4 * this->u(m, 1)) +
+				2 * this->h * std::get<2>(this->left_coefficients)) /
+				(2 * this->h * std::get<1>(this->left_coefficients) -
+					3 * std::get<0>(this->left_coefficients));
+			this->u(m, this->u.cols() - 1) = (std::get<0>(this->right_coefficients) *
+				(4 * this->u(m, this->u.cols() - 2) - this->u(m, this->u.cols() - 3)) +
+				2 * this->h * std::get<2>(this->right_coefficients)) /
+				(2 * this->h * std::get<1>(this->right_coefficients) +
+					3 * std::get<0>(this->right_coefficients));
+		}
+		this->is_solved = true;
 	}
 }

@@ -17,7 +17,8 @@ enum class InputData
 	LyapunovMap,
 	Bifurcation,
 	PoincareMap,
-	PartialDifferentialEquation
+	PartialDifferentialEquation,
+	HyperboliсPartialDifferentialEquation
 };
 
 struct InputDataMain
@@ -38,6 +39,16 @@ struct InputDataMain
 	std::vector<long double> planeEquation;
 	int ExplicitNumericalMethodCode;
 	std::vector<std::string> boundary_functions;
+	long double h;
+	long double tau;
+	std::pair<long double, long double> space_interval;
+	std::string phi;
+	std::string psi;
+	std::tuple<long double, long double, long double> left_coefficients;
+	std::tuple<long double, long double, long double> right_coefficients;
+	long double T;
+	std::string f;
+	std::string g;
 };
 
 struct OutputDataMain
@@ -102,6 +113,26 @@ void from_json(const nlohmann::json& json, InputDataMain& input_data)
 	try { json.at("step").get_to(input_data.step); }
 	catch (nlohmann::json::out_of_range& ex) {}
 	try { json.at("boundary functions[]").get_to(input_data.boundary_functions); }
+	catch (nlohmann::json::out_of_range& ex) {}
+	try { json.at("h").get_to(input_data.h); }
+	catch (nlohmann::json::out_of_range& ex) {}
+	try { json.at("tau").get_to(input_data.tau); }
+	catch (nlohmann::json::out_of_range& ex) {}
+	try { json.at("space interval[]").get_to(input_data.space_interval); }
+	catch (nlohmann::json::out_of_range& ex) {}
+	try { json.at("phi").get_to(input_data.phi); }
+	catch (nlohmann::json::out_of_range& ex) {}
+	try { json.at("psi").get_to(input_data.psi); }
+	catch (nlohmann::json::out_of_range& ex) {}
+	try { json.at("left coefficients[]").get_to(input_data.left_coefficients); }
+	catch (nlohmann::json::out_of_range& ex) {}
+	try { json.at("right coefficients[]").get_to(input_data.right_coefficients); }
+	catch (nlohmann::json::out_of_range& ex) {}
+	try { json.at("T").get_to(input_data.T); }
+	catch (nlohmann::json::out_of_range& ex) {}
+	try { json.at("f").get_to(input_data.f); }
+	catch (nlohmann::json::out_of_range& ex) {}
+	try { json.at("g").get_to(input_data.g); }
 	catch (nlohmann::json::out_of_range& ex) {}
 }
 
@@ -230,6 +261,8 @@ nlohmann::json PoincareMap(nlohmann::json& input_json)
 nlohmann::json LyapunovMap(nlohmann::json& input_json)
 {
 	InputDataMain input_data = input_json;
+	/*for (auto& function : input_data.functions)
+		std::cout << function << std::endl;*/
 	return nlohmann::json{ DynS::GetMapLyapunovExponents(input_data.starting_values, input_data.functions, input_data.variables, input_data.additional_equations, input_data.parameters, input_data.ranges, input_data.steps, input_data.time, input_data.time, input_data.dt) };
 }
 
@@ -290,10 +323,50 @@ nlohmann::json PartialDifferentialEquation(nlohmann::json& input_json)
 	OutputDataMain output_data{};
 	DynS::PartialDifferentialEquation equation(input_data.boundary_functions, input_data.range.first, input_data.range.second, input_data.step, input_data.functions, input_data.variables, input_data.additional_equations, input_data.dt);
 	output_data.solution_surface = equation.GetSolution(input_data.time);
-	output_data.timeSequence = equation.GetTimeSequence();
+	output_data.timeSequence.push_back(0);
+	for (auto& time : equation.GetTimeSequence())
+		output_data.timeSequence.push_back(time);
+	std::vector<std::vector<Eigen::VectorXld>> trajectories_with_time;
+	for (size_t i = 0; i < output_data.solution_surface.size(); i++)
+	{
+		trajectories_with_time.push_back({});
+		for (size_t j = 0; j < output_data.solution_surface[i].size(); j++)
+		{
+			Eigen::VectorXld point_with_time(output_data.solution_surface[i][j].size() + 1);
+			point_with_time[0] = output_data.timeSequence[j];
+			for (size_t k = 0; k < output_data.solution_surface[i][j].size(); k++)
+				point_with_time[k + 1] = output_data.solution_surface[i][j][k];
+			trajectories_with_time[i].push_back(point_with_time);
+		}
+	}
+	DynS::TrajectoriesToObj(trajectories_with_time, { 0, 2, 1 });
 	output_data.variables = input_data.variables;
 	output_data.dt = input_data.dt;
 	return nlohmann::json{ output_data };
+}
+
+nlohmann::json HyperboliсPartialDifferentialEquation(nlohmann::json& input_json)
+{
+	InputDataMain input_data = input_json;
+	FunctionParser_ld f, g, phi, psi;
+	f.Parse(input_data.f, "x");
+	g.Parse(input_data.g, "x");
+	phi.Parse(input_data.phi, "x");
+	psi.Parse(input_data.psi, "x");
+	DynS::HyperboliсPartialDifferentialEquation equation(f, g, phi, psi, input_data.left_coefficients, input_data.right_coefficients, input_data.space_interval, input_data.T, input_data.h, input_data.tau);
+	Eigen::MatrixXld solution = equation.Solution();
+	std::ofstream ffout;
+	ffout.open("SolutionPlot.csv");
+	for (size_t m = 0; m < solution.rows(); m++)
+	{
+		for (size_t n = 0; n < solution.cols(); n++)
+		{
+			ffout << solution(m,n) << ", ";
+		}
+		ffout << "\n";
+	}
+	ffout.close();
+	return nlohmann::json{ "Complete" };
 }
 
 int main()
@@ -320,6 +393,10 @@ int main()
 			break;
 		case InputData::PartialDifferentialEquation:
 			output_json = PartialDifferentialEquation(input_json);
+			break;
+		case InputData::HyperboliсPartialDifferentialEquation:
+			output_json = HyperboliсPartialDifferentialEquation(input_json);
+			break;
 		}
 		std::cout << output_json;
 		//fout << output_json;
