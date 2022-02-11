@@ -345,15 +345,15 @@ nlohmann::json PartialDifferentialEquation(nlohmann::json& input_json)
 	return nlohmann::json{ output_data };
 }
 
-nlohmann::json HyperboliсPartialDifferentialEquation(nlohmann::json& input_json)
+nlohmann::json HyperbolicPartialDifferentialEquation(nlohmann::json& input_json)
 {
 	InputDataMain input_data = input_json;
-	FunctionParser_ld f, g, phi, psi;
-	f.Parse(input_data.f, "x");
-	g.Parse(input_data.g, "x");
-	phi.Parse(input_data.phi, "x");
-	psi.Parse(input_data.psi, "x");
-	DynS::HyperboliсPartialDifferentialEquation equation(f, g, phi, psi, input_data.left_coefficients, input_data.right_coefficients, input_data.space_interval, input_data.T, input_data.h, input_data.tau);
+	//FunctionParser_ld f, g, phi, psi;
+	//f.Parse(input_data.f, "x");
+	//g.Parse(input_data.g, "x");
+	//phi.Parse(input_data.phi, "x");
+	//psi.Parse(input_data.psi, "x");
+	DynS::HyperbolicPartialDifferentialEquation equation(input_data.f, input_data.g, input_data.phi, input_data.psi, input_data.left_coefficients, input_data.right_coefficients, input_data.space_interval, input_data.T, input_data.h, input_data.tau);
 	Eigen::MatrixXld solution = equation.Solution();
 	std::ofstream ffout;
 	ffout.open("SolutionPlot.csv");
@@ -395,7 +395,7 @@ int main()
 			output_json = PartialDifferentialEquation(input_json);
 			break;
 		case InputData::HyperboliсPartialDifferentialEquation:
-			output_json = HyperboliсPartialDifferentialEquation(input_json);
+			output_json = HyperbolicPartialDifferentialEquation(input_json);
 			break;
 		}
 		std::cout << output_json;
