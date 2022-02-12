@@ -826,7 +826,7 @@ namespace DynS
 		this->u = Eigen::MatrixXld::Zero(this->T / this->tau + 1,
 			(this->space_interval.second - this->space_interval.first) / this->h + 1);
 
-		std::cout << this->u.cols() << "x" << this->u.rows() << std::endl;
+		//std::cout << this->u.cols() << "x" << this->u.rows() << std::endl;
 		if (this->u.cols() < 2 || this->u.rows() < 2)
 			throw(std::exception("Very big step"));
 
@@ -1102,33 +1102,37 @@ namespace DynS
 
 }
 
-/*
-//#ifndef _DEBUG
-// Needed for export to Python
-#include <pybind11/pybind11.h>
-#include <pybind11/eigen.h>
-#include <pybind11/stl.h>
-
-namespace py = pybind11;
-
-PYBIND11_MODULE(dyns, module_handle) {
-	module_handle.doc() = "Numerical Solvers library. Created in MEPhI in 2022";
+///*
+#ifndef _DEBUG
 	
-	py::class_<DynS::HyperbolicPartialDifferentialEquation>(
-		module_handle, "HyperbolicPartialDifferentialEquation"
-		).def(py::init<std::string, std::string, std::string, std::string,
-			std::tuple<long double, long double, long double>,
-			std::tuple<long double, long double, long double>,
-			std::pair<long double, long double>,
-			long double, long double, long double>())
-		.def("Solution", &DynS::HyperbolicPartialDifferentialEquation::Solution, "Returns solution by an explicit second-order method");
-	py::class_<DynS::SecondOrderODESolver>(
-		module_handle, "SecondOrderODESolver"
-		).def(py::init<std::vector<std::pair<std::string, std::string>>, Eigen::Matrix<double, 2, 3>, std::pair<double, double>, size_t>())
-		.def("GetConditionNumber", &DynS::SecondOrderODESolver::GetConditionNumber, "Returns condition number of matrix for solving ODE")
-		.def("GetSolution", &DynS::SecondOrderODESolver::GetSolution, "Returns Y - approximation of the solution on a grid")
-		.def("GetMatrixForSolution", &DynS::SecondOrderODESolver::GetMatrixA, "Returns matrix for solving ODE");
+	// Needed for export to Python
+	#include <pybind11/pybind11.h>
+	#include <pybind11/eigen.h>
+	#include <pybind11/stl.h>
 
-}
-//#endif // !_DEBUG
-*/
+	namespace py = pybind11;
+
+	PYBIND11_MODULE(dyns, module_handle) {
+		module_handle.doc() = "Numerical Solvers library. Created in MEPhI in 2022";
+	
+		py::class_<DynS::HyperbolicPartialDifferentialEquation>(
+			module_handle, "HyperbolicPartialDifferentialEquation"
+			).def(py::init<std::string, std::string, std::string, std::string,
+				std::tuple<long double, long double, long double>,
+				std::tuple<long double, long double, long double>,
+				std::pair<long double, long double>,
+				long double, long double, long double>())
+			.def("GetXs", &DynS::HyperbolicPartialDifferentialEquation::GetXs, "Gets x coordinates of matrix")
+			.def("GetTs", &DynS::HyperbolicPartialDifferentialEquation::GetTs, "Gets t coordinates of matrix")
+			.def("Solution", &DynS::HyperbolicPartialDifferentialEquation::Solution, "Returns matrix of solution by an explicit second-order method");
+		py::class_<DynS::SecondOrderODESolver>(
+			module_handle, "SecondOrderODESolver"
+			).def(py::init<std::vector<std::pair<std::string, std::string>>, Eigen::Matrix<double, 2, 3>, std::pair<double, double>, size_t>())
+			.def("GetConditionNumber", &DynS::SecondOrderODESolver::GetConditionNumber, "Returns condition number of matrix for solving ODE")
+			.def("GetSolution", &DynS::SecondOrderODESolver::GetSolution, "Returns Y - approximation of the solution on a grid")
+			.def("GetMatrixForSolution", &DynS::SecondOrderODESolver::GetMatrixA, "Returns matrix for solving ODE");
+
+	}
+
+#endif // !_DEBUG
+//*/
