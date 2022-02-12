@@ -353,16 +353,30 @@ nlohmann::json HyperbolicPartialDifferentialEquation(nlohmann::json& input_json)
 	Eigen::MatrixXld solution = equation.Solution();
 	std::ofstream ffout;
 	ffout.open("SolutionPlot.csv");
+	long double max_u = 0;
 	for (size_t m = 0; m < solution.rows(); m++)
 	{
 		for (size_t n = 0; n < solution.cols(); n++)
 		{
 			ffout << solution(m, n) << ", ";
+			max_u = std::fabsl(solution(m, n)) > max_u ? std::fabsl(solution(m, n)) : max_u;
 		}
 		ffout << "\n";
 	}
 	ffout.close();
-	return nlohmann::json{ "Complete" };
+	ffout.open("Xs.csv");
+	for (auto& x : equation.GetXs())
+	{
+		ffout << x << std::endl;
+	}
+	ffout.close();
+	ffout.open("Ts.csv");
+	for (auto& t : equation.GetTs())
+	{
+		ffout << t << std::endl;
+	}
+	ffout.close();
+	return nlohmann::json{ "Complete: " + std::to_string(max_u) + "\n"};
 }
 
 int main()

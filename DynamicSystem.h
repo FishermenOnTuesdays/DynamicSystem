@@ -17,6 +17,7 @@
 #include <map>
 #include <omp.h>
 #include <string>
+#include <cmath>
 #include "fparser.hh"
 #include "Eigen/Dense"
 #include "unsupported/Eigen/MatrixFunctions"
