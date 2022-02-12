@@ -282,7 +282,7 @@ namespace DynS
 	{
 		//Public methods
 	public:
-		//Create a hyperboliс partial differential equation
+		//Create a hyperbolic partial differential equation
 		//f - Function in front of compound derivative
 		//g - Function in front of derivative u
 		//phi - Initial offset
@@ -306,12 +306,18 @@ namespace DynS
 			long double tau
 		);
 
-		//Get solution of this hyperboliс partial differential equation by an explicit second-order method
+		//Get solution of this hyperbolic partial differential equation by an explicit second-order method
 		Eigen::MatrixXld Solution();
+
+		//Get x coordinates of matrix
+		std::vector<long double> GetXs();
+
+		//Get t coordinates of matrix
+		std::vector<long double> GetTs();
 
 		//Private methods
 	private:
-		//Solve this hyperboliс partial differential equation by an explicit second-order method
+		//Solve this hyperbolic partial differential equation by an explicit second-order method
 		void Solve();
 
 		//Variables
@@ -351,6 +357,18 @@ namespace DynS
 
 		//Indicates the presence of a solution
 		bool is_solved;
+
+		//Offset along the matrix columns to store the value
+		size_t offset_h;
+
+		//Offset along the matrix rows to store the value
+		size_t offset_tau;
+
+		//x value vector
+		std::vector<long double> xs;
+
+		//t value vector
+		std::vector<long double> ts;
 	};
 
 	class SecondOrderODESolver

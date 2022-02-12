@@ -18,7 +18,7 @@ enum class InputData
 	Bifurcation,
 	PoincareMap,
 	PartialDifferentialEquation,
-	HyperboliсPartialDifferentialEquation
+	HyperbolicPartialDifferentialEquation
 };
 
 struct InputDataMain
@@ -97,10 +97,10 @@ void from_json(const nlohmann::json& json, InputDataMain& input_data)
 				input_data.trajectory[i](j) = trajectory[i][j];
 		}
 	}
-	catch (nlohmann::json::out_of_range & ex) {}
+	catch (nlohmann::json::out_of_range& ex) {}
 	try { json.at("plane equation[]").get_to(input_data.planeEquation); }
 	catch (nlohmann::json::out_of_range& ex) {}
-	try { json.at("parameters[]").get_to(input_data.parameters); } 
+	try { json.at("parameters[]").get_to(input_data.parameters); }
 	catch (nlohmann::json::out_of_range& ex) {}
 	try { json.at("ranges[]").get_to(input_data.ranges); }
 	catch (nlohmann::json::out_of_range& ex) {}
@@ -195,11 +195,11 @@ void to_json(nlohmann::json& json, const OutputDataMain& output_data)
 
 	//To Json
 	json = nlohmann::json
-	{ 
+	{
 		{"trajectory", trajectory},
 		{"intersections3D", intersections3D},
 		{"intersections2D", intersections2D},
-		{"series of spectrum lyapunov exponents", output_data.series_of_spectrum_lyapunov_exponents}, 
+		{"series of spectrum lyapunov exponents", output_data.series_of_spectrum_lyapunov_exponents},
 		{"map_lyapunov_exponents", output_data.map_lyapunov_exponents},
 		{"comment", output_data.comment},
 		{"trajectories",  trajectories},
@@ -215,25 +215,25 @@ nlohmann::json Main(nlohmann::json& input_json)
 	dynamic_system.SetDt(input_data.dt);
 	switch (input_data.ExplicitNumericalMethodCode)
 	{
-		case 0:
-			dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::RungeKuttaFourthOrder;
-			break;
-		case 1:
-			dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::AdaptiveRungeKuttaFourthOrder;
-			break;
-		case 2:
-			dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::FixedVRungeKuttaFourthOrder;
-			break;
-		case 3:
-			dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::EulerExplicit;
-			break;
-		default:
-			break;
+	case 0:
+		dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::RungeKuttaFourthOrder;
+		break;
+	case 1:
+		dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::AdaptiveRungeKuttaFourthOrder;
+		break;
+	case 2:
+		dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::FixedVRungeKuttaFourthOrder;
+		break;
+	case 3:
+		dynamic_system.explicit_method = DynS::DynamicSystem::ExplicitNumericalMethod::EulerExplicit;
+		break;
+	default:
+		break;
 	}
 	output_data.trajectory = dynamic_system.GetTrajectory(input_data.time);
 	output_data.timeSequence = dynamic_system.GetTimeSequence();
 	output_data.comment = dynamic_system.GetErrorComment();
-	if(output_data.comment == "Infinity trajectory")
+	if (output_data.comment == "Infinity trajectory")
 		dynamic_system.SetCurrentPointOfTrajectory(input_data.starting_values);
 	dynamic_system.SetDt(input_data.dt);
 	output_data.series_of_spectrum_lyapunov_exponents = dynamic_system.GetTimeSeriesSpectrumLyapunov(input_data.time);
@@ -273,7 +273,7 @@ nlohmann::json Bifurcation(nlohmann::json& input_json)
 	//std::vector<std::map<std::string, std::vector<long double>>> trajectories(number_of_trajectories);
 	std::vector<std::vector<long double>> BifurcationMap(number_of_trajectories);
 	//std::vector<long double> parameter_values(number_of_trajectories);
-	#pragma omp parallel for
+#pragma omp parallel for
 	for (int i = 0; i < number_of_trajectories; i++)
 	{
 		long double parameter = input_data.range.first + i * input_data.step;
@@ -348,11 +348,7 @@ nlohmann::json PartialDifferentialEquation(nlohmann::json& input_json)
 nlohmann::json HyperbolicPartialDifferentialEquation(nlohmann::json& input_json)
 {
 	InputDataMain input_data = input_json;
-	//FunctionParser_ld f, g, phi, psi;
-	//f.Parse(input_data.f, "x");
-	//g.Parse(input_data.g, "x");
-	//phi.Parse(input_data.phi, "x");
-	//psi.Parse(input_data.psi, "x");
+	FunctionParser_ld f, g, phi, psi;
 	DynS::HyperbolicPartialDifferentialEquation equation(input_data.f, input_data.g, input_data.phi, input_data.psi, input_data.left_coefficients, input_data.right_coefficients, input_data.space_interval, input_data.T, input_data.h, input_data.tau);
 	Eigen::MatrixXld solution = equation.Solution();
 	std::ofstream ffout;
@@ -361,7 +357,7 @@ nlohmann::json HyperbolicPartialDifferentialEquation(nlohmann::json& input_json)
 	{
 		for (size_t n = 0; n < solution.cols(); n++)
 		{
-			ffout << solution(m,n) << ", ";
+			ffout << solution(m, n) << ", ";
 		}
 		ffout << "\n";
 	}
@@ -394,7 +390,7 @@ int main()
 		case InputData::PartialDifferentialEquation:
 			output_json = PartialDifferentialEquation(input_json);
 			break;
-		case InputData::HyperboliсPartialDifferentialEquation:
+		case InputData::HyperbolicPartialDifferentialEquation:
 			output_json = HyperbolicPartialDifferentialEquation(input_json);
 			break;
 		}
@@ -402,7 +398,7 @@ int main()
 		//fout << output_json;
 		fout.close();
 	}
-	catch(std::exception& ex)
+	catch (std::exception& ex)
 	{
 		std::cout << "Error:" << ex.what();
 	}
