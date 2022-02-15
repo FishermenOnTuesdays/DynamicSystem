@@ -49,6 +49,7 @@ struct InputDataMain
 	long double T;
 	std::string f;
 	std::string g;
+	std::string q;
 };
 
 struct OutputDataMain
@@ -133,6 +134,8 @@ void from_json(const nlohmann::json& json, InputDataMain& input_data)
 	try { json.at("f").get_to(input_data.f); }
 	catch (nlohmann::json::out_of_range& ex) {}
 	try { json.at("g").get_to(input_data.g); }
+	catch (nlohmann::json::out_of_range& ex) {}
+	try { json.at("q").get_to(input_data.g); }
 	catch (nlohmann::json::out_of_range& ex) {}
 }
 
@@ -348,8 +351,7 @@ nlohmann::json PartialDifferentialEquation(nlohmann::json& input_json)
 nlohmann::json HyperbolicPartialDifferentialEquation(nlohmann::json& input_json)
 {
 	InputDataMain input_data = input_json;
-	FunctionParser_ld f, g, phi, psi;
-	DynS::HyperbolicPartialDifferentialEquation equation(input_data.f, input_data.g, input_data.phi, input_data.psi, input_data.left_coefficients, input_data.right_coefficients, input_data.space_interval, input_data.T, input_data.h, input_data.tau);
+	DynS::HyperbolicPartialDifferentialEquation equation(input_data.f, input_data.g, input_data.q, input_data.phi, input_data.psi, input_data.left_coefficients, input_data.right_coefficients, input_data.space_interval, input_data.T, input_data.h, input_data.tau);
 	Eigen::MatrixXld solution = equation.Solution();
 	std::ofstream ffout;
 	ffout.open("SolutionPlot.csv");

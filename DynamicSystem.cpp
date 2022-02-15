@@ -809,7 +809,7 @@ namespace DynS
 	//HyperbolicPartialDifferentialEquation
 
 	HyperbolicPartialDifferentialEquation::HyperbolicPartialDifferentialEquation(
-		std::string f, std::string g, std::string phi, std::string psi,
+		std::string f, std::string g, std::string q, std::string phi, std::string psi,
 		std::tuple<long double, long double, long double> left_coefficients, 
 		std::tuple<long double, long double, long double> right_coefficients, 
 		std::pair<long double, long double> space_interval, 
@@ -817,9 +817,10 @@ namespace DynS
 		left_coefficients(left_coefficients), h(h), tau(tau),
 		right_coefficients(right_coefficients), space_interval(space_interval), T(T)
 	{
-		// parse function strings
-		this->f.Parse(f, "x");
-		this->g.Parse(g, "x");
+		//Parse function strings
+		this->f.Parse(f, "x,t");
+		this->g.Parse(g, "x,t");
+		this->q.Parse(q, "x,t");
 		this->phi.Parse(phi, "x");
 		this->psi.Parse(psi, "x");
 
@@ -838,27 +839,29 @@ namespace DynS
 		if (this->h < DBL_EPSILON)
 			throw(std::exception("Very small step"));
 
-		long double first_x = this->space_interval.first + this->h;
-		long double next_first_x = this->space_interval.first + 2*this->h;
-		long double previous_first_x = this->space_interval.first;
-		long double minimum = this->f.Eval(&first_x) * this->g.Eval(&first_x);
-		long double maximum = std::powl(this->f.Eval(&first_x)*
-			(this->g.Eval(&next_first_x) - this->g.Eval(&previous_first_x) / 4), 2)
+		Eigen::Vector2ld x_t = { this->space_interval.first + this->h, this->tau };
+		Eigen::Vector2ld next_x_t = { this->space_interval.first + 2 * this->h, this->tau };
+		Eigen::Vector2ld previous_x_t = { this->space_interval.first, this->tau };
+
+		long double minimum = this->f.Eval(x_t.data()) * this->g.Eval(x_t.data());
+		long double maximum = std::powl(this->f.Eval(x_t.data())*
+			(this->g.Eval(next_x_t.data()) - this->g.Eval(previous_x_t.data()) / 4), 2)
 			+
-			std::powl(this->f.Eval(&first_x) * this->g.Eval(&first_x), 2);
-		for (long double x = this->space_interval.first + 2*this->h;
-			x < this->space_interval.second;
-			x += this->h)
+			std::powl(this->f.Eval(x_t.data()) * this->g.Eval(x_t.data()), 2);
+
+		for (; x_t(1) < this->T; x_t(1) += this->tau)
 		{
-			long double next_x = x + this->h;
-			long double previous_x = x - this->h;
-			long double right_expression = this->f.Eval(&x) * this->g.Eval(&x);
-			long double left_expression = std::powl(this->f.Eval(&x) *
-				(this->g.Eval(&next_x) - this->g.Eval(&previous_x) / 4), 2)
-				+
-				std::powl(this->f.Eval(&x) * this->g.Eval(&x), 2);
-			minimum = right_expression < minimum ? right_expression : minimum;
-			maximum = left_expression > maximum ? left_expression : maximum;
+			for (; x_t(0) < this->space_interval.second; 
+				x_t(0) += this->h, next_x_t(0) += this->h, previous_x_t(0) += this->h)
+			{
+				long double right_expression = this->f.Eval(x_t.data()) * this->g.Eval(x_t.data());
+				long double left_expression = std::powl(this->f.Eval(x_t.data()) *
+					(this->g.Eval(next_x_t.data()) - this->g.Eval(previous_x_t.data()) / 4), 2)
+					+
+					std::powl(this->f.Eval(x_t.data()) * this->g.Eval(x_t.data()), 2);
+				minimum = right_expression < minimum ? right_expression : minimum;
+				maximum = left_expression > maximum ? left_expression : maximum;
+			}
 		}
 
 		if (maximum < DBL_EPSILON)
@@ -919,88 +922,119 @@ namespace DynS
 	{
 		Eigen::MatrixXld last_three_layers = Eigen::MatrixXld::Zero(3,
 			std::ceil((this->space_interval.second - this->space_interval.first) / this->h) + 1);
-		long double x = this->space_interval.first;
-		long double next_x = this->space_interval.first + this->h;
-		long double previous_x = this->space_interval.first - this->h;
+
+		Eigen::Vector2ld x_t_0 = { this->space_interval.first, 0 };
+		Eigen::Vector2ld next_x_t_0 = { this->space_interval.first + this->h, 0 };
+		Eigen::Vector2ld previous_x_t_0 = { this->space_interval.first - this->h, 0 };
+
+		Eigen::Vector2ld x_t_1 = { this->space_interval.first, this->tau };
+		Eigen::Vector2ld next_x_t_1 = { this->space_interval.first + this->h, this->tau };
+		Eigen::Vector2ld previous_x_t_1 = { this->space_interval.first - this->h, this->tau };
+
 		std::cout << last_three_layers.cols() << " - elements in row\n";
 		std::cout << std::ceil(this->T / this->tau) + 1 << " - elements in col\n";
+		
 		for (size_t n = 0; n < last_three_layers.cols() - 1; n++)
 		{
-			last_three_layers(0, n) = this->phi.Eval(&x);
+			last_three_layers(0, n) = this->phi.Eval(&x_t_0(0));
 			if (n % this->offset_h == 0)
 			{
 				this->u(0, n / this->offset_h) = last_three_layers(0, n);
-				this->xs.push_back(x);
+				this->xs.push_back(x_t_0(0));
 			}
-			last_three_layers(1, n) = this->phi.Eval(&x) + this->tau * this->psi.Eval(&x) +
-				this->f.Eval(&x) * this->tau * this->tau / 2 *
-				((this->g.Eval(&next_x) - this->g.Eval(&previous_x)) /
+			last_three_layers(1, n) = this->phi.Eval(&x_t_1(0)) + this->tau * this->psi.Eval(&x_t_1(0)) +
+				this->f.Eval(x_t_1.data()) * this->tau * this->tau / 2 *
+				((this->g.Eval(next_x_t_1.data()) - this->g.Eval(previous_x_t_1.data())) /
 					(2 * this->h) *
-					(this->phi.Eval(&next_x) - this->phi.Eval(&previous_x)) /
+					(this->phi.Eval(&next_x_t_1(0)) - this->phi.Eval(&previous_x_t_1(0))) /
 					(2 * this->h)
 					+
-					this->g.Eval(&x) * (this->phi.Eval(&next_x) -
-						2 * this->phi.Eval(&x) +
-						this->phi.Eval(&previous_x)) / (this->h * this->h));
+					this->g.Eval(x_t_1.data()) * (this->phi.Eval(&next_x_t_1(0)) -
+						2 * this->phi.Eval(&x_t_1(0)) +
+						this->phi.Eval(&previous_x_t_1(0))) / (this->h * this->h)) +
+					this->tau * this->tau / 2 * this->q.Eval(x_t_1.data());
 			if ((1 % this->offset_tau == 0 || 1 == std::ceil(this->T / this->tau)) && n % this->offset_h == 0)
 				this->u(1, n / this->offset_h) = last_three_layers(1, n);
-			x += this->h;
-			next_x += this->h;
-			previous_x += this->h;
+
+			x_t_0(0) += this->h;
+			next_x_t_0(0) += this->h;
+			previous_x_t_0(0) += this->h;
+
+			x_t_1(0) += this->h;
+			next_x_t_1(0) += this->h;
+			previous_x_t_1(0) += this->h;
 		}
-		x = this->space_interval.second;
-		next_x = this->space_interval.second + this->h;
-		previous_x = this->space_interval.second - this->h;
-		last_three_layers(0, last_three_layers.cols() - 1) = this->phi.Eval(&x);
+
+		x_t_0 = { this->space_interval.second, 0 };
+		next_x_t_0 = { this->space_interval.second + this->h, 0 };
+		previous_x_t_0 = { this->space_interval.second - this->h, 0 };
+
+		x_t_1 = { this->space_interval.second, this->tau };
+		next_x_t_1 = { this->space_interval.second + this->h, this->tau };
+		previous_x_t_1 = { this->space_interval.second - this->h, this->tau };
+
+		last_three_layers(0, last_three_layers.cols() - 1) = this->phi.Eval(&x_t_0(0));
 		this->u(0, this->u.cols() - 1) = last_three_layers(0, last_three_layers.cols() - 1);
-		this->xs.push_back(x);
-		last_three_layers(1, last_three_layers.cols() - 1) = this->phi.Eval(&x) + 
-			this->tau * this->psi.Eval(&x) +
-			this->f.Eval(&x) * this->tau * this->tau / 2 *
-			((this->g.Eval(&next_x) - this->g.Eval(&previous_x)) /
+		this->xs.push_back(x_t_0(0));
+
+		last_three_layers(1, last_three_layers.cols() - 1) = this->phi.Eval(&x_t_1(0)) + 
+			this->tau * this->psi.Eval(&x_t_1(0)) +
+			this->f.Eval(x_t_1.data()) * this->tau * this->tau / 2 *
+			((this->g.Eval(next_x_t_1.data()) - this->g.Eval(previous_x_t_1.data())) /
 				(2 * this->h) *
-				(this->phi.Eval(&next_x) - this->phi.Eval(&previous_x)) /
+				(this->phi.Eval(&next_x_t_1(0)) - this->phi.Eval(&previous_x_t_1(0))) /
 				(2 * this->h)
 				+
-				this->g.Eval(&x) * (this->phi.Eval(&next_x) -
-					2 * this->phi.Eval(&x) +
-					this->phi.Eval(&previous_x)) / (this->h * this->h));
+				this->g.Eval(x_t_1.data()) * (this->phi.Eval(&next_x_t_1(0)) -
+					2 * this->phi.Eval(&x_t_1(0)) +
+					this->phi.Eval(&previous_x_t_1(0))) / (this->h * this->h)) +
+				this->tau * this->tau / 2 * this->q.Eval(x_t_1.data());
 		this->ts.push_back(0);
 		if (1 % this->offset_tau == 0 || 1 == std::ceil(this->T / this->tau))
 		{
 			this->ts.push_back(this->tau);
 			this->u(1, this->u.cols() - 1) = last_three_layers(1, last_three_layers.cols() - 1);
 		}
+
+		Eigen::Vector2ld x_t;
+		Eigen::Vector2ld next_x_t;
+		Eigen::Vector2ld previous_x_t;
+
 		for (size_t m = 2; m < std::ceil(this->T / this->tau); m++)
 		{
-			x = this->space_interval.first + this->h;
-			next_x = this->space_interval.first + 2 * this->h;
-			previous_x = this->space_interval.first;
+			x_t = { this->space_interval.first + this->h, m * this->tau };
+			next_x_t = { this->space_interval.first + 2 * this->h, m * this->tau };
+			previous_x_t = { this->space_interval.first, m * this->tau };
 			for (size_t n = 1; n < last_three_layers.cols() - 1; n++)
 			{
 				last_three_layers(2, n) = 2 * last_three_layers(1, n) - last_three_layers(0, n) +
-					this->tau * this->tau * this->f.Eval(&x) * (
-						(this->g.Eval(&next_x) - this->g.Eval(&previous_x)) *
+					this->tau * this->tau * this->f.Eval(x_t.data()) * (
+						(this->g.Eval(next_x_t.data()) - this->g.Eval(previous_x_t.data())) *
 						(last_three_layers(1, n + 1) - last_three_layers(1, n - 1)) /
 						(4 * this->h * this->h)
 						+
-						this->g.Eval(&x) *
+						this->g.Eval(x_t.data()) *
 						(last_three_layers(1, n + 1) -
 							2 * last_three_layers(1, n) +
 							last_three_layers(1, n - 1)) /
-						(this->h * this->h));
+						(this->h * this->h)) +
+						this->tau*this->tau*this->q.Eval(x_t.data());
 				if (m % this->offset_tau == 0 && n % this->offset_h == 0)
 					this->u(m / this->offset_tau, n / this->offset_h) = last_three_layers(2, n);
-				x += this->h;
-				next_x += this->h;
-				previous_x += this->h;
+
+				x_t(0) += this->h;
+				next_x_t(0) += this->h;
+				previous_x_t(0) += this->h;
 			}
+
 			last_three_layers(2, 0) = (std::get<0>(this->left_coefficients) *
 				(last_three_layers(2, 2) - 4 * last_three_layers(2, 1)) +
 				2 * this->h * std::get<2>(this->left_coefficients)) /
 				(2 * this->h * std::get<1>(this->left_coefficients) -
 					3 * std::get<0>(this->left_coefficients));
-			long double last_h = this->space_interval.second - x + this->h;
+
+			long double last_h = this->space_interval.second - x_t(0) + this->h;
+
 			last_three_layers(2, last_three_layers.cols() - 1) = (std::get<0>(this->right_coefficients) *
 				((this->h + last_h) / (this->h * last_h) * last_three_layers(2, last_three_layers.cols() - 2) -
 					(last_h / (this->h * (this->h + last_h))) * last_three_layers(2, last_three_layers.cols() - 3)) +
@@ -1017,46 +1051,56 @@ namespace DynS
 			last_three_layers.row(1) << last_three_layers.row(2);
 			last_three_layers.row(2) << Eigen::VectorXld::Zero(std::ceil((this->space_interval.second - this->space_interval.first) / this->h) + 1);
 		}
+
 		//m == std::ceil(this->T / this->tau) :
 		long double last_tau = this->T - (std::ceil(this->T / this->tau) - 1) * this->tau;
-		x = this->space_interval.first + this->h;
-		next_x = this->space_interval.first + 2 * this->h;
-		previous_x = this->space_interval.first;
+
+		x_t = { this->space_interval.first + this->h, this->T };
+		next_x_t = { this->space_interval.first + 2 * this->h, this->T };
+		previous_x_t = { this->space_interval.first, this->T };
+
 		for (size_t n = 1; n < last_three_layers.cols() - 1; n++)
 		{
 			last_three_layers(2, n) = (this->tau + last_tau) / this->tau * last_three_layers(1, n) -
 				last_tau / this->tau * last_three_layers(0, n) +
-				last_tau * (last_tau + this->tau) / 2 * this->f.Eval(&x) * (
-					(this->g.Eval(&next_x) - this->g.Eval(&previous_x)) *
+				last_tau * (last_tau + this->tau) / 2 * this->f.Eval(x_t.data()) * (
+					(this->g.Eval(next_x_t.data()) - this->g.Eval(previous_x_t.data())) *
 					(last_three_layers(1, n + 1) - last_three_layers(1, n - 1)) /
 					(4 * this->h * this->h)
 					+
-					this->g.Eval(&x) *
+					this->g.Eval(x_t.data()) *
 					(last_three_layers(1, n + 1) -
 						2 * last_three_layers(1, n) +
 						last_three_layers(1, n - 1)) /
-					(this->h * this->h));
+					(this->h * this->h)) +
+					this->tau * this->tau * this->q.Eval(x_t.data());
 			if ( n % this->offset_h == 0 )
 				this->u(this->u.rows() - 1, n / this->offset_h) = last_three_layers(2, n);
-			x += this->h;
-			next_x += this->h;
-			previous_x += this->h;
+
+			x_t(0) += this->h;
+			next_x_t(0) += this->h;
+			previous_x_t(0) += this->h;
 		}
+
 		last_three_layers(2, 0) = (std::get<0>(this->left_coefficients) *
 			(last_three_layers(2, 2) - 4 * last_three_layers(2, 1)) +
 			2 * this->h * std::get<2>(this->left_coefficients)) /
 			(2 * this->h * std::get<1>(this->left_coefficients) -
 				3 * std::get<0>(this->left_coefficients));
-		long double last_h = this->space_interval.second - x + this->h;
+
+		long double last_h = this->space_interval.second - x_t(0) + this->h;
+
 		last_three_layers(2, last_three_layers.cols() - 1) = (std::get<0>(this->right_coefficients) *
 			((this->h + last_h) / (this->h * last_h) * last_three_layers(2, last_three_layers.cols() - 2) -
 				(last_h / (this->h * (this->h + last_h))) * last_three_layers(2, last_three_layers.cols() - 3)) +
 			std::get<2>(this->right_coefficients)) /
 			(std::get<1>(this->right_coefficients) +
 				(2 * last_h + this->h) / (last_h * (this->h + last_h)) * std::get<0>(this->right_coefficients));
+
 		this->u(this->u.rows() - 1, 0) = last_three_layers(2, 0);
 		this->u(this->u.rows() - 1, this->u.cols() - 1) = last_three_layers(2, last_three_layers.cols() - 1);
 		this->ts.push_back(this->T);
+
 		this->is_solved = true;
 	}
 
@@ -1161,7 +1205,7 @@ namespace DynS
 
 }
 
-///*
+/*
 #ifndef _DEBUG
 	
 	// Needed for export to Python
@@ -1194,4 +1238,4 @@ namespace DynS
 	}
 
 #endif // !_DEBUG
-//*/
+*/

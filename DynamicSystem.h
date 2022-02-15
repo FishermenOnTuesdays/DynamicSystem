@@ -286,6 +286,7 @@ namespace DynS
 		//Create a hyperbolic partial differential equation
 		//f - Function in front of compound derivative
 		//g - Function in front of derivative u
+		//q - Heterogeneity function
 		//phi - Initial offset
 		//psi - Initial velocity
 		//left_coefficients - Coefficients at the left end
@@ -297,6 +298,7 @@ namespace DynS
 		HyperbolicPartialDifferentialEquation(
 			std::string f,
 			std::string g,
+			std::string q,
 			std::string phi,
 			std::string psi,
 			std::tuple<long double, long double, long double> left_coefficients,
@@ -352,6 +354,9 @@ namespace DynS
 
 		//Function in front of derivative u
 		FunctionParser_ld g;
+
+		//Heterogeneity function
+		FunctionParser_ld q;
 
 		//Matrix of solution
 		Eigen::MatrixXld u;
