@@ -35,15 +35,23 @@ namespace Eigen
 	using Vector3ld = Eigen::Matrix<long double, 3, 1>;
 }
 
+/*
 // needed for Poincare
 typedef struct plane_equation {
 	long double A, B, C, D;
 } PlaneEquation;
+*/
 
+using PlaneEquation = std::tuple<long double, long double, long double, long double>;
+
+/*
 typedef struct poincare_result {
 	std::vector<Eigen::Vector3ld> intersections3D;
 	std::vector<Eigen::Vector2ld> intersections2D;
 } PoincareMapData;
+*/
+
+//using PoincareMapData = std::pair<std::vector<Eigen::Vector2ld>, std::vector<Eigen::Vector3ld>>;
 
 /*
 typedef struct bifurcation_result {
@@ -80,7 +88,7 @@ namespace DynS
 	);
 
 	//Returns Poincare map from input trajectory
-	PoincareMapData GetPoincareMap(PlaneEquation planeEquation, std::vector<Eigen::VectorXld> trajectory);
+	std::pair<std::vector<Eigen::Vector2ld>, std::vector<Eigen::Vector3ld>> GetPoincareMap(PlaneEquation planeEquation, std::vector<Eigen::VectorXld> trajectory);
 
 	//Returns Bifurcation map from input trajectory
 	std::vector<long double> GetBifurcationMap(std::vector<Eigen::VectorXld> trajectory);
@@ -129,9 +137,9 @@ namespace DynS
 		//Returns a series of Lyapunov exponents spectrum at every step
 		std::map<std::string, std::vector<long double>> GetTimeSeriesSpectrumLyapunov(long double time);
 
-		/*For Rouol*/
+		/*For rouol*/
 		//Returns Poincare map
-		PoincareMapData GetPoincareMap(PlaneEquation planeEquation);
+		std::pair<std::vector<Eigen::Vector2ld>, std::vector<Eigen::Vector3ld>> GetPoincareMap(PlaneEquation planeEquation);
 
 		//Set dt for this dynamic system
 		void SetDt(long double dt);

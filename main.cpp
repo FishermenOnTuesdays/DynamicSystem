@@ -254,10 +254,10 @@ nlohmann::json PoincareMap(nlohmann::json& input_json)
 	planeEquation.C = input_data.planeEquation[2];
 	planeEquation.D = input_data.planeEquation[3];
 	std::vector<Eigen::VectorXld> trajectory = input_data.trajectory;
-	PoincareMapData result = DynS::GetPoincareMap(planeEquation, trajectory);
+	std::pair<std::vector<Eigen::Vector2ld>, std::vector<Eigen::Vector3ld>> result = DynS::GetPoincareMap(planeEquation, trajectory);
 	OutputDataMain output_data{};
-	output_data.intersections2D = result.intersections2D;
-	output_data.intersections3D = result.intersections3D;
+	output_data.intersections2D = result.first;
+	output_data.intersections3D = result.second;
 	return nlohmann::json{ output_data };
 }
 

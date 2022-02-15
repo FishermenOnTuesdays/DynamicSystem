@@ -74,8 +74,12 @@ namespace DynS
 		return (x > 0) ? 1 : ((x < 0) ? -1 : 0);
 	}
 
-	int SideSign(PlaneEquation equation, Eigen::Vector3ld point) {
-		return Sign(equation.A * point[0] + equation.B * point[1] + equation.C * point[2] + equation.D);
+	int SideSign(PlaneEquation planeEquation, Eigen::Vector3ld point) {
+		long double A = std::get<0>(planeEquation);
+		long double B = std::get<1>(planeEquation);
+		long double C = std::get<2>(planeEquation);
+		long double D = std::get<3>(planeEquation);
+		return Sign(A * point[0] + B * point[1] + C * point[2] + D);
 	}
 
 	using Basis3ld = std::vector<Eigen::Vector3ld>;
@@ -97,18 +101,26 @@ namespace DynS
 	}
 
 	Eigen::Vector3ld intersectionCalc(PlaneEquation planeEquation, Eigen::Vector3ld pointA, Eigen::Vector3ld pointB) {
-		long double t = (planeEquation.A * pointA[0] + planeEquation.B * pointA[1] + planeEquation.C * pointA[2] + planeEquation.D) / (planeEquation.A * (pointA[0] - pointB[0]) + planeEquation.B * (pointA[1] - pointB[1]) + planeEquation.C * (pointA[2] - pointB[2]));
+		long double A = std::get<0>(planeEquation);
+		long double B = std::get<1>(planeEquation);
+		long double C = std::get<2>(planeEquation);
+		long double D = std::get<3>(planeEquation);
+		long double t = (A * pointA[0] + B * pointA[1] + C * pointA[2] + D) / (A * (pointA[0] - pointB[0]) + B * (pointA[1] - pointB[1]) + C * (pointA[2] - pointB[2]));
 		return Eigen::Vector3ld(pointA[0] + (pointB[0] - pointA[0]) * t, pointA[1] + (pointB[1] - pointA[1]) * t, pointA[2] + (pointB[2] - pointA[2]) * t);
 	}
 
-	PoincareMapData GetPoincareMap(PlaneEquation planeEquation, std::vector<Eigen::VectorXld> trajectory)
+	std::pair<std::vector<Eigen::Vector2ld>, std::vector<Eigen::Vector3ld>> GetPoincareMap(PlaneEquation planeEquation, std::vector<Eigen::VectorXld> trajectory)
 	{
 		/*Use Eigen library for vector-matrix computation*/
 		//Also you have this->trajectory for this method
 
 		// assume 3d trajectory
+		long double A = std::get<0>(planeEquation);
+		long double B = std::get<1>(planeEquation);
+		long double C = std::get<2>(planeEquation);
+		long double D = std::get<3>(planeEquation);
 
-		Basis3ld basis = transformBasis(Eigen::Vector3ld(planeEquation.A, planeEquation.B, planeEquation.C));
+		Basis3ld basis = transformBasis(Eigen::Vector3ld(A, B, C));
 
 		std::vector<Eigen::Vector3ld> intersections3;
 		std::vector<Eigen::Vector2ld> intersections2;
@@ -143,9 +155,9 @@ namespace DynS
 			prevsign = sign;
 		}
 
-		PoincareMapData result = PoincareMapData();
-		result.intersections2D = intersections2;
-		result.intersections3D = intersections3;
+		std::pair<std::vector<Eigen::Vector2ld>, std::vector<Eigen::Vector3ld>> result = std::pair<std::vector<Eigen::Vector2ld>, std::vector<Eigen::Vector3ld>>();
+		result.first = intersections2;
+		result.second = intersections3;
 		return result;
 	}
 
@@ -156,13 +168,13 @@ namespace DynS
 		//Also you have this->trajectory for this method
 
 		// assume 3d trajectory
-		PlaneEquation planeEquation;
-		planeEquation.A = -1;
-		planeEquation.B = -1;
-		planeEquation.C = -1;
-		planeEquation.D = 0;
+		PlaneEquation planeEquation = PlaneEquation{-1, -1, -1, 0};
+		long double A = std::get<0>(planeEquation);
+		long double B = std::get<1>(planeEquation);
+		long double C = std::get<2>(planeEquation);
+		long double D = std::get<3>(planeEquation);
 
-		Basis3ld basis = transformBasis(Eigen::Vector3ld(planeEquation.A, planeEquation.B, planeEquation.C));
+		Basis3ld basis = transformBasis(Eigen::Vector3ld(A, B, C));
 
 		//std::vector<Eigen::Vector3ld> intersections3;
 		//std::vector<Eigen::Vector2ld> intersections2;
@@ -391,7 +403,7 @@ namespace DynS
 	}
 
 	/*For Rouol*/
-	PoincareMapData DynamicSystem::GetPoincareMap(PlaneEquation planeEquation)
+	std::pair<std::vector<Eigen::Vector2ld>, std::vector<Eigen::Vector3ld>> DynamicSystem::GetPoincareMap(PlaneEquation planeEquation)
 	{
 		/*Use Eigen library for vector-matrix computation*/
 		//Also you have this->trajectory for this method
@@ -399,7 +411,12 @@ namespace DynS
 		// assume 3d trajectory
 		std::vector<Eigen::VectorXld> data = this->trajectory;
 
-		Basis3ld basis = transformBasis(Eigen::Vector3ld(planeEquation.A, planeEquation.B, planeEquation.C));
+		long double A = std::get<0>(planeEquation);
+		long double B = std::get<1>(planeEquation);
+		long double C = std::get<2>(planeEquation);
+		long double D = std::get<3>(planeEquation);
+
+		Basis3ld basis = transformBasis(Eigen::Vector3ld(A, B, C));
 
 		std::vector<Eigen::Vector3ld> intersections3;
 		std::vector<Eigen::Vector2ld> intersections2;
@@ -434,9 +451,9 @@ namespace DynS
 			prevsign = sign;
 		}
 		
-		PoincareMapData result = PoincareMapData();
-		result.intersections2D = intersections2;
-		result.intersections3D = intersections3;
+		std::pair<std::vector<Eigen::Vector2ld>, std::vector<Eigen::Vector3ld>> result = std::pair<std::vector<Eigen::Vector2ld>, std::vector<Eigen::Vector3ld>>();
+		result.first = intersections2;
+		result.second = intersections3;
 		return result;
 	}
 
@@ -1205,7 +1222,7 @@ namespace DynS
 
 }
 
-/*
+///*
 #ifndef _DEBUG
 	
 	// Needed for export to Python
@@ -1217,10 +1234,37 @@ namespace DynS
 
 	PYBIND11_MODULE(dyns, module_handle) {
 		module_handle.doc() = "Numerical Solvers library. Created in MEPhI in 2022";
-	
+		
+		module_handle.def("GetMapLyapunovExponents", &DynS::GetMapLyapunovExponents, "Returns a map of Lyapunov exponents this dynamic system");
+		module_handle.def("GetBifurcationMap", &DynS::GetBifurcationMap, "Returns Bifurcation map from input trajectory", py::arg("trajectory"));
+		module_handle.def("GetPoincareMap", &DynS::GetPoincareMap, "Returns Poincare map from input trajectory", py::arg("planeEquation"), py::arg("trajectory"));
+
+		py::class_<DynS::DynamicSystem>(
+			module_handle, "DynamicSystem"
+			).def(py::init<
+				const Eigen::VectorXld&,
+				const std::vector<std::string>&,
+				std::string,
+				std::string>(), 
+				py::arg("starting_point"),
+				py::arg("strings_functions"),
+				py::arg("variables"),
+				py::arg("additional_variables"))
+			.def("GetTrajectory", &DynS::DynamicSystem::GetTrajectory, "Returns a sequence of trajectory's points at given time", py::arg("time"))
+			.def("GetTimeSequence", &DynS::DynamicSystem::GetTimeSequence, "Returns a Time sequence of calculated trajectory")
+			.def("GetSpectrumLyapunov", &DynS::DynamicSystem::GetSpectrumLyapunov, "Returns a spectrum of Lyapunov exponents this dynamic system", py::arg("time"))
+			.def("GetTimeSeriesSpectrumLyapunov", &DynS::DynamicSystem::GetTimeSeriesSpectrumLyapunov, "Returns a series of Lyapunov exponents spectrum at every step", py::arg("time"))
+			.def("GetPoincareMap", &DynS::DynamicSystem::GetPoincareMap, "Returns Poincare map", py::arg("plane_equation"))
+			.def("SetDt", &DynS::DynamicSystem::SetDt, "Sets dt for this dynamic system", py::arg("dt"))
+			.def("SetTime", &DynS::DynamicSystem::SetTime, "Sets time for this dynamic system", py::arg("time"))
+			.def("Reset", &DynS::DynamicSystem::Reset, "Resets dynamic system (clears trajectory and time sequence, sets time to zero and sets current point of trajectory)", py::arg("current_point"))
+			.def("ResetWithTime", &DynS::DynamicSystem::ResetWithTime, "Resets dynamic system with time point on first position (clears trajectory and time sequence, sets time to current time point and sets current point of trajectory)", py::arg("current_point_with_time"))
+			.def("SetCurrentPointOfTrajectory", &DynS::DynamicSystem::SetCurrentPointOfTrajectory, "Sets current point of dynamic system trajectory", py::arg("current_point"))
+			.def("GetErrorComment", &DynS::DynamicSystem::GetErrorComment, "Returns error comment");
+
 		py::class_<DynS::HyperbolicPartialDifferentialEquation>(
 			module_handle, "HyperbolicPartialDifferentialEquation"
-			).def(py::init<std::string, std::string, std::string, std::string,
+			).def(py::init<std::string, std::string, std::string, std::string, std::string,
 				std::tuple<long double, long double, long double>,
 				std::tuple<long double, long double, long double>,
 				std::pair<long double, long double>,
@@ -1238,4 +1282,4 @@ namespace DynS
 	}
 
 #endif // !_DEBUG
-*/
+//*/
