@@ -1249,7 +1249,7 @@ namespace DynS
 				py::arg("starting_point"),
 				py::arg("strings_functions"),
 				py::arg("variables"),
-				py::arg("additional_variables"))
+				py::arg("additional_variables")="")
 			.def("GetTrajectory", &DynS::DynamicSystem::GetTrajectory, "Returns a sequence of trajectory's points at given time", py::arg("time"))
 			.def("GetTimeSequence", &DynS::DynamicSystem::GetTimeSequence, "Returns a Time sequence of calculated trajectory")
 			.def("GetSpectrumLyapunov", &DynS::DynamicSystem::GetSpectrumLyapunov, "Returns a spectrum of Lyapunov exponents this dynamic system", py::arg("time"))
