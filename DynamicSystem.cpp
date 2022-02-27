@@ -217,7 +217,7 @@ namespace DynS
 		Eigen::MatrixXi faces;
 		Eigen::VectorXi list_of_indexes;
 		if (trajectories.size() == 0)
-			throw std::exception("No trajectories");
+			throw std::logic_error("No trajectories");
 		auto trajectory_with_min_size = *std::min_element(trajectories.begin(), trajectories.end(),
 			[](const std::vector<Eigen::VectorXld>& first_trajectory, const std::vector<Eigen::VectorXld>& second_trajectory)
 			{
@@ -225,9 +225,9 @@ namespace DynS
 			});
 		size_t min_size = trajectory_with_min_size.size();
 		if (min_size == 0)
-			throw std::exception("There is an empty trajectory");
+			throw std::logic_error("There is an empty trajectory");
 		if (trajectory_with_min_size[0].size() <= std::max({ axis_indexes[0], axis_indexes[1], axis_indexes[2] }))
-			throw std::exception("There is an inappropriate index");
+			throw std::logic_error("There is an inappropriate index");
 		vertices.resize(min_size * trajectories.size(), axis_indexes.size());
 		for (size_t i = 0; i < trajectories.size(); i++)
 			for (size_t j = 0; j < min_size; j++)
@@ -453,7 +453,7 @@ namespace DynS
 	void DynamicSystem::Reset(Eigen::VectorXld current_point)
 	{
 		if (current_point.size() != this->dimension)
-			throw std::exception("current_point has invalid size");
+			throw std::logic_error("current_point has invalid size");
 		this->trajectory.clear();
 		this->timeSequence.clear();
 		SetTime(0);
@@ -463,7 +463,7 @@ namespace DynS
 	void DynamicSystem::ResetWithTime(Eigen::VectorXld current_point_with_time)
 	{
 		if (current_point_with_time.size() != this->dimension + 1)
-			throw std::exception("current_point_with_time has invalid size");
+			throw std::logic_error("current_point_with_time has invalid size");
 		this->trajectory.clear();
 		this->timeSequence.clear();
 		SetTime(current_point_with_time[0]);
@@ -837,7 +837,7 @@ namespace DynS
 			this->h /= 2;
 
 		if (this->h < DBL_EPSILON)
-			throw(std::exception("Very small step"));
+			throw(std::logic_error("Very small step"));
 
 		Eigen::Vector2ld x_t = { this->space_interval.first + this->h, this->tau };
 		Eigen::Vector2ld next_x_t = { this->space_interval.first + 2 * this->h, this->tau };
@@ -876,13 +876,13 @@ namespace DynS
 				}
 				else
 				{
-					throw(std::exception("This problem is not solved by this scheme."));
+					throw(std::logic_error("This problem is not solved by this scheme."));
 				}
 			}
 		}
 
 		if (this->tau < DBL_EPSILON)
-			throw(std::exception("Very small step"));
+			throw(std::logic_error("Very small step"));
 
 		this->offset_h = size_t(store_h / this->h);
 		this->offset_tau = size_t(store_tau / this->tau);
@@ -892,7 +892,7 @@ namespace DynS
 
 		std::cout << this->u.cols() << "x" << this->u.rows() << std::endl;
 		if (this->u.cols() < 2 || this->u.rows() < 2)
-			throw(std::exception("Very big step"));
+			throw(std::logic_error("Very big step"));
 
 		this->is_solved = false;
 	}
@@ -1105,21 +1105,22 @@ namespace DynS
 	}
 
 	//SecondOrderODESolver
+
 	SecondOrderODESolver::SecondOrderODESolver(std::vector<std::pair<std::string, std::string>> functions_string_pairs, Eigen::Matrix<double, 2, 3> boundary_coefficients, std::pair<double, double> border, size_t N)
 	{
 		for (auto function_pair : functions_string_pairs) {
 			FunctionParser parser;
 			if (parser.Parse(function_pair.first, function_pair.second) >= 0)
-				throw std::exception(parser.ErrorMsg());
+				throw std::logic_error(parser.ErrorMsg());
 			this->functions_coefficients.push_back(parser);
 		}
 		if (border.first > border.second)
-			throw std::exception("Invalid \'border\' values");
+			throw std::logic_error("Invalid \'border\' values");
 		if (N < 3)
-			throw std::exception("Invalid \'N\' value");
+			throw std::logic_error("Invalid \'N\' value");
 		if ((std::pow(boundary_coefficients(0, 0), 2) + std::pow(boundary_coefficients(0, 1), 2)) < 0.001
 			&& (std::pow(boundary_coefficients(1, 0), 2) + std::pow(boundary_coefficients(1, 1), 2)) < 0.001)
-			throw std::exception("Invalid \'boundary_coefficients\' values");
+			throw std::logic_error("Invalid \'boundary_coefficients\' values");
 		this->A = Eigen::MatrixXd::Zero(N, N);
 		this->Y = Eigen::VectorXd::Zero(N);
 		this->PHI = Eigen::VectorXd::Zero(N);
@@ -1163,13 +1164,13 @@ namespace DynS
 			double x = i * this->h + this->a;
 			this->A(i, i - 1) = 1 / std::pow(this->h, 2) - this->functions_coefficients[0].Eval(&x) / (2 * this->h);
 			if (this->functions_coefficients[0].EvalError())
-				throw std::exception("Error \'Eval\' call");
+				throw std::logic_error("Error \'Eval\' call");
 			this->A(i, i) = this->functions_coefficients[1].Eval(&x) - 2 / std::pow(this->h, 2);
 			if (this->functions_coefficients[1].EvalError())
-				throw std::exception("Error \'Eval\' call");
+				throw std::logic_error("Error \'Eval\' call");
 			this->A(i, i + 1) = 1 / std::pow(this->h, 2) + this->functions_coefficients[0].Eval(&x) / (2 * this->h);
 			if (this->functions_coefficients[0].EvalError())
-				throw std::exception("Error \'Eval\' call");
+				throw std::logic_error("Error \'Eval\' call");
 		}
 
 		//Filling last row of the matrix
@@ -1189,7 +1190,7 @@ namespace DynS
 			double x = i * this->h + this->a;
 			this->PHI(i) = this->functions_coefficients[2].Eval(&x);
 			if (this->functions_coefficients[2].EvalError())
-				throw std::exception("Error \'Eval\' call");
+				throw std::logic_error("Error \'Eval\' call");
 		}
 
 		//Set last element of the vector
@@ -1201,6 +1202,207 @@ namespace DynS
 		//Solve with colPivHouseholderQr decomposition
 		this->Y = this->A.colPivHouseholderQr().solve(this->PHI);
 		this->is_solved = true;
+	}
+
+	//ParabolicPartialDifferentialEquation
+
+	ParabolicPartialDifferentialEquation::ParabolicPartialDifferentialEquation(
+		const std::string& q, 
+		const std::string& k, 
+		const std::string& f, 
+		const std::string& phi,
+		const std::vector<std::string>& left_coefficients,
+		const std::vector<std::string>& right_coefficients,
+		std::pair<long double, long double> space_interval, 
+		long double T,
+		long double h,
+		long double tau, 
+		size_t rarefaction_ratio_x,
+		size_t rarefaction_ratio_t
+	) : space_interval(space_interval),
+		T(T),
+		h(h), 
+		tau(tau), 
+		offset_h(rarefaction_ratio_x), 
+		offset_tau(rarefaction_ratio_t)
+	{
+		//Check for invalid input
+		if (this->tau < DBL_EPSILON)
+			throw(std::logic_error("Very small step"));
+		if (this->h < DBL_EPSILON)
+			throw(std::logic_error("Very small step"));
+
+		//Create empty u-matrix
+		this->u = Eigen::MatrixXld::Zero(
+			std::ceill(this->T / (rarefaction_ratio_t * this->tau)) + 1,
+			std::ceill((this->space_interval.second - this->space_interval.first) / (rarefaction_ratio_x * this->h)) + 1
+		);
+
+		//Check for invalid input once more
+		if (this->u.cols() < 2 || this->u.rows() < 2)
+			throw(std::logic_error("Very big step or rarefaction ratio"));
+
+		//Parse function strings
+		auto ParseWithError = [](const std::string& string_function, FunctionParser_ld& function, const std::string& vars)
+		{
+			static int parse_result;
+			parse_result = function.Parse(string_function, vars);
+			if (parse_result >= 0)
+				throw std::logic_error('\n' + string_function + '\n' + std::string(parse_result, ' ') + "^\n" + function.ErrorMsg());
+		};
+		auto GetParseFunctionOfTime = [ParseWithError](const std::string& string_function) -> FunctionParser_ld
+		{
+			FunctionParser_ld function;
+			ParseWithError(string_function, function, "t");
+			return function;
+		};
+		ParseWithError(q, this->q, "u,x,t");
+		ParseWithError(k, this->k, "u,x,t");
+		ParseWithError(f, this->f, "u,x,t");
+		ParseWithError(phi, this->phi, "x");
+		std::ranges::transform(left_coefficients, std::back_inserter(this->left_coefficients), GetParseFunctionOfTime);
+		std::ranges::transform(right_coefficients, std::back_inserter(this->right_coefficients), GetParseFunctionOfTime);
+	}
+
+	const Eigen::MatrixXld& ParabolicPartialDifferentialEquation::Solution()
+	{
+		if (!this->is_solved)
+			Solve();
+		return this->u;
+	}
+
+	const std::vector<long double>& ParabolicPartialDifferentialEquation::GetXs()
+	{
+		if (!this->is_solved)
+			Solve();
+		return this->xs;
+	}
+
+	const std::vector<long double>& ParabolicPartialDifferentialEquation::GetTs()
+	{
+		if (!this->is_solved)
+			Solve();
+		return this->ts;
+	}
+
+	void ParabolicPartialDifferentialEquation::Solve()
+	{
+		//Initialize last_layer of u-matrix 
+		Eigen::VectorXld last_layer = Eigen::VectorXld::Zero(
+			std::ceill((this->space_interval.second - this->space_interval.first) / this->h) + 1
+		);
+
+		//Fill last_layer of u-matrix
+		long double x = this->space_interval.first;
+		for (size_t n = 0; n < last_layer.size() - 1; n++, x += this->h)
+			last_layer(n) = this->phi.Eval(&x);
+		last_layer(last_layer.size() - 1) = this->phi.Eval(&this->space_interval.second);
+
+		//Fill first row of u-matrix and vector xs
+		long double rarefaction_h = this->offset_h * this->h;
+		x = this->space_interval.first;
+		for (size_t n = 0; n < this->u.cols() - 1; n++, x += rarefaction_h)
+		{
+			this->u(0, n) = this->phi.Eval(&x);
+			this->xs.push_back(x);
+		}
+		this->u(0, this->u.cols() - 1) = this->phi.Eval(&this->space_interval.second);
+		this->xs.push_back(this->space_interval.second);
+
+		//Fill middle rows of u-matrix and vector ts
+		this->ts.push_back(0);
+		size_t M = std::ceill(this->T / this->tau) + 1;
+		for (size_t m = 1; m < M; m++)
+		{
+			//Set current time
+			long double current_time = 
+				m == M - 1 ? this->T : m * this->tau;
+
+			//Set last_tau
+			long double last_tau =
+				m == M - 1 ? this->T - (m - 1) * this->tau : this->tau;
+
+			//Drawing up a system of equations for finding a new layer: 
+			//A * last_layer = B
+
+			//Initialize matrix A
+			Eigen::MatrixXld A = Eigen::MatrixXld::Zero(last_layer.size(), last_layer.size());
+
+			//Initialize vector B
+			Eigen::VectorXld B = Eigen::VectorXld::Zero(last_layer.size());
+
+			//Fill first row of matrix A and element of vector B
+			std::vector<long double> current_left_coefficients;
+			auto EvalOfTime = [current_time](FunctionParser_ld& function) -> long double
+			{
+				return function.Eval(&current_time);
+			};
+			std::ranges::transform(this->left_coefficients, std::back_inserter(current_left_coefficients), EvalOfTime);
+			A(0, 0) = current_left_coefficients[1] - 1.5 * current_left_coefficients[0] / this->h;
+			A(0, 1) = 2 * current_left_coefficients[0] / this->h;
+			A(0, 2) = -current_left_coefficients[0] / (2 * this->h);
+			B(0) = current_left_coefficients[2];
+
+			//Fill middle rows of matrix A and elements of vector B
+			for (size_t n = 1; n < A.rows() - 1; n++)
+			{
+				std::vector<long double> current_point = { 
+					last_layer(n), 
+					n * this->h, 
+					current_time 
+				};
+				std::vector<long double> current_point_plus_half = { 
+					(last_layer(n) + last_layer(n - 1)) / 2, 
+					(n + 0.5) * this->h, 
+					current_time 
+				};
+				std::vector<long double> current_point_minus_half = { 
+					(last_layer(n) + last_layer(n - 1)) / 2, 
+					(n - 0.5) * this->h, 
+					current_time 
+				};
+				long double factor = last_tau / (2 * std::powl(this->h, 2));
+				long double current_q = this->q.Eval(current_point.data());
+				long double current_f = this->f.Eval(current_point.data());
+				long double current_plus_half_k = this->k.Eval(current_point_plus_half.data());
+				long double current_minus_half_k = this->k.Eval(current_point_minus_half.data());
+				long double previous_coefficient = factor * current_q * current_minus_half_k;
+				long double next_coefficient = factor * current_q * current_plus_half_k;
+				long double current_coefficient = previous_coefficient + next_coefficient;
+				A(n, n - 1) = -previous_coefficient;
+				A(n, n) = 1 + current_coefficient;
+				A(n, n + 1) = -next_coefficient;
+				B(n) =
+					previous_coefficient * last_layer(n - 1) +
+					(1 - current_coefficient) * last_layer(n) +
+					next_coefficient * last_layer(n + 1) +
+					last_tau * current_f;
+			}
+
+			//Fill last row of matrix A and element of vector B
+			std::vector<long double> current_right_coefficients;
+			std::ranges::transform(this->right_coefficients, std::back_inserter(current_right_coefficients), EvalOfTime);
+			long double last_h = this->space_interval.second - this->space_interval.first + (A.rows() - 1) * this->h;
+			A(A.rows() - 1, A.cols() - 3) = 
+				current_right_coefficients[0] * last_h / (this->h * (this->h + last_h));
+			A(A.rows() - 1, A.cols() - 2) = 
+				-current_right_coefficients[0] * (this->h + last_h) / (this->h * last_h);
+			A(A.rows() - 1, A.cols() - 1) =
+				current_right_coefficients[1] + current_right_coefficients[0] * (2 * last_h + this->h) / (last_h * (this->h + last_h));
+			B(B.size() - 1) = current_right_coefficients[2];
+
+			//Solve linear system
+			last_layer = A.colPivHouseholderQr().solve(B);
+
+			//Storing the values into u-matrix
+			if (m % this->offset_tau == 0 || m == M - 1)
+			{
+				for (size_t n = 0; n < this->u.cols() - 1; n++)
+					this->u(m / this->offset_tau, n) = last_layer(n * this->offset_h);
+				this->u(m / this->offset_tau, this->u.cols() - 1) = last_layer(last_layer.size() - 1);
+				this->ts.push_back(current_time);
+			}
+		}
 	}
 
 }
@@ -1220,7 +1422,7 @@ namespace DynS
 	
 		py::class_<DynS::HyperbolicPartialDifferentialEquation>(
 			module_handle, "HyperbolicPartialDifferentialEquation"
-			).def(py::init<std::string, std::string, std::string, std::string,
+			).def(py::init<std::string, std::string, std::string, std::string, std::string,
 				std::tuple<long double, long double, long double>,
 				std::tuple<long double, long double, long double>,
 				std::pair<long double, long double>,

@@ -18,7 +18,8 @@ enum class InputData
 	Bifurcation,
 	PoincareMap,
 	PartialDifferentialEquation,
-	HyperbolicPartialDifferentialEquation
+	HyperbolicPartialDifferentialEquation,
+	ParabolicPartialDifferentialEquation
 };
 
 struct InputDataMain
@@ -50,6 +51,7 @@ struct InputDataMain
 	std::string f;
 	std::string g;
 	std::string q;
+	std::string k;
 };
 
 struct OutputDataMain
@@ -135,7 +137,9 @@ void from_json(const nlohmann::json& json, InputDataMain& input_data)
 	catch (nlohmann::json::out_of_range& ex) {}
 	try { json.at("g").get_to(input_data.g); }
 	catch (nlohmann::json::out_of_range& ex) {}
-	try { json.at("q").get_to(input_data.g); }
+	try { json.at("q").get_to(input_data.q); }
+	catch (nlohmann::json::out_of_range& ex) {}
+	try { json.at("k").get_to(input_data.k); }
 	catch (nlohmann::json::out_of_range& ex) {}
 }
 
@@ -381,6 +385,37 @@ nlohmann::json HyperbolicPartialDifferentialEquation(nlohmann::json& input_json)
 	return nlohmann::json{ "Complete: " + std::to_string(max_u) + "\n"};
 }
 
+nlohmann::json ParabolicPartialDifferentialEquation(nlohmann::json& input_json)
+{
+	InputDataMain input_data = input_json;
+	DynS::ParabolicPartialDifferentialEquation equation(input_data.q, input_data.k, input_data.f, input_data.phi, {"0", "1", "0"}, {"0", "1", "0"}, input_data.space_interval, input_data.T, input_data.h, input_data.tau, 10, 10);
+	Eigen::MatrixXld solution = equation.Solution();
+	std::ofstream ffout;
+	ffout.open("SolutionPlot.csv");
+	for (size_t m = 0; m < solution.rows(); m++)
+	{
+		for (size_t n = 0; n < solution.cols(); n++)
+		{
+			ffout << solution(m, n) << ", ";
+		}
+		ffout << "\n";
+	}
+	ffout.close();
+	ffout.open("Xs.csv");
+	for (auto& x : equation.GetXs())
+	{
+		ffout << x << std::endl;
+	}
+	ffout.close();
+	ffout.open("Ts.csv");
+	for (auto& t : equation.GetTs())
+	{
+		ffout << t << std::endl;
+	}
+	ffout.close();
+	return nlohmann::json{ "Complete" };
+}
+
 int main()
 {
 	try
@@ -408,6 +443,9 @@ int main()
 			break;
 		case InputData::HyperbolicPartialDifferentialEquation:
 			output_json = HyperbolicPartialDifferentialEquation(input_json);
+			break;
+		case InputData::ParabolicPartialDifferentialEquation:
+			output_json = ParabolicPartialDifferentialEquation(input_json);
 			break;
 		}
 		std::cout << output_json;

@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <functional>
+#include <algorithm>
 #include <vector>
 #include <utility>
 #include <map>
@@ -299,7 +300,7 @@ namespace DynS
 			std::string f,
 			std::string g,
 			std::string q,
-			std::string phi,
+			std::string phi,	
 			std::string psi,
 			std::tuple<long double, long double, long double> left_coefficients,
 			std::tuple<long double, long double, long double> right_coefficients,
@@ -462,6 +463,103 @@ namespace DynS
 
 		//A value indicating whether the ODE has been resolved
 		bool is_solved;
+	};
+
+	class ParabolicPartialDifferentialEquation
+	{
+		//Public methods
+	public:
+		//Create a parabolic partial differential equation
+		//q - Function in front of compound derivative (function of the variables u, x, t)
+		//k - Function in front of derivative u (function of the variables u, x, t)
+		//f - Heterogeneity function (function of the variables u, x, t)
+		//phi - Initial offset (function of the variable x)
+		//left_coefficients - Coefficients at the left end (three functions of the variable t)
+		//right_coefficients - Coefficients at the right end (three functions of the variable t)
+		//space_interval - Borders of space (two real numbers)
+		//T - Simulation time (positive real number)
+		//h - Step in space (positive real number less then 1)
+		//tau - Step in time (positive real number less then 1)
+		//rarefaction_ratio_x - How many times to increase the step along the x-axis to save to the u-matrix
+		//rarefaction_ratio_t - How many times to increase the step along the t-axis to save to the u-matrix
+		ParabolicPartialDifferentialEquation(
+			const std::string& q, 
+			const std::string& k, 
+			const std::string& f, 
+			const std::string& phi,
+			const std::vector<std::string>& left_coefficients,
+			const std::vector<std::string>& right_coefficients,
+			std::pair<long double, long double> space_interval,
+			long double T,
+			long double h,
+			long double tau,
+			size_t rarefaction_ratio_x,
+			size_t rarefaction_ratio_t
+		);
+
+		//Get solution of this hyperbolic partial differential equation by an explicit second-order method
+		const Eigen::MatrixXld& Solution();
+
+		//Get x coordinates of matrix
+		const std::vector<long double>& GetXs();
+
+		//Get t coordinates of matrix
+		const std::vector<long double>& GetTs();
+
+		//Private methods
+	private:
+		//Solve this hyperbolic partial differential equation by an explicit second-order method
+		void Solve();
+
+		//Variables
+	private:
+		//Step in space
+		long double h;
+
+		//Step in time
+		long double tau;
+
+		//Borders of space
+		std::pair<long double, long double> space_interval;
+
+		//Initial offset
+		FunctionParser_ld phi;
+
+		//Coefficients at the left end
+		std::vector<FunctionParser_ld> left_coefficients;
+
+		//Coefficients at the right end
+		std::vector<FunctionParser_ld> right_coefficients;
+
+		//Simulation time
+		long double T;
+
+		//Function in front of compound derivative
+		FunctionParser_ld q;
+
+		//Function in front of derivative u
+		FunctionParser_ld k;
+
+		//Heterogeneity function
+		FunctionParser_ld f;
+
+		//Matrix of solution
+		Eigen::MatrixXld u;
+
+		//Indicates the presence of a solution
+		bool is_solved;
+
+		//Offset along the matrix columns to store the value
+		size_t offset_h;
+
+		//Offset along the matrix rows to store the value
+		size_t offset_tau;
+
+		//x value vector
+		std::vector<long double> xs;
+
+		//t value vector
+		std::vector<long double> ts;
 	};
 
 }
