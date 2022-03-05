@@ -1434,7 +1434,7 @@ namespace DynS
 
 	namespace py = pybind11;
 
-	PYBIND11_MODULE(dyns, module_handle) {
+	PYBIND11_MODULE(pydyns, module_handle) {
 		module_handle.doc() = "Numerical Solvers library. Created in MEPhI in 2022";
 		
 		module_handle.def("GetMapLyapunovExponents", &DynS::GetMapLyapunovExponents, "Returns a map of Lyapunov exponents this dynamic system");
