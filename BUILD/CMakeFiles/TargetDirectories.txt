@@ -1,4 +1,0 @@
-C:/Users/stas2/Source/Repos/NewDynamicSystem/DynamicSystem/BUILD/CMakeFiles/dyns.dir
-C:/Users/stas2/Source/Repos/NewDynamicSystem/DynamicSystem/BUILD/CMakeFiles/ALL_BUILD.dir
-C:/Users/stas2/Source/Repos/NewDynamicSystem/DynamicSystem/BUILD/CMakeFiles/ZERO_CHECK.dir
-C:/Users/stas2/Source/Repos/NewDynamicSystem/DynamicSystem/BUILD/pybind11/CMakeFiles/ALL_BUILD.dir
