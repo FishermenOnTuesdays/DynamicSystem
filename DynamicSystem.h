@@ -505,7 +505,7 @@ namespace DynS
 			size_t rarefaction_ratio_t
 		);
 
-		//Get solution of this hyperbolic partial differential equation by an explicit second-order method
+		//Get solution of this parabolic partial differential equation by an implicit second-order method
 		const Eigen::MatrixXld& Solution();
 
 		//Get x coordinates of matrix
@@ -516,7 +516,7 @@ namespace DynS
 
 		//Private methods
 	private:
-		//Solve this hyperbolic partial differential equation by an explicit second-order method
+		//Solve this parabolic partial differential equation by an implicit second-order method
 		void Solve();
 
 		//Variables
