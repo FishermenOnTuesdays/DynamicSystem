@@ -1470,10 +1470,53 @@ namespace DynS
 				std::tuple<long double, long double, long double>,
 				std::tuple<long double, long double, long double>,
 				std::pair<long double, long double>,
-				long double, long double, long double>())
+				long double, long double, long double>(),
+				py::arg("f"),
+				py::arg("g"),
+				py::arg("q"),
+				py::arg("phi"),
+				py::arg("psi"),
+				py::arg("left_coefficients"),
+				py::arg("right_coefficients"),
+				py::arg("space_interval"),
+				py::arg("T"),
+				py::arg("h"),
+				py::arg("tau"))
 			.def("GetXs", &DynS::HyperbolicPartialDifferentialEquation::GetXs, "Gets x coordinates of matrix")
 			.def("GetTs", &DynS::HyperbolicPartialDifferentialEquation::GetTs, "Gets t coordinates of matrix")
 			.def("Solution", &DynS::HyperbolicPartialDifferentialEquation::Solution, "Returns matrix of solution by an explicit second-order method");
+		
+		py::class_<DynS::ParabolicPartialDifferentialEquation>(
+			module_handle, "ParabolicPartialDifferentialEquation"
+			).def(py::init<
+				const std::string&, 
+				const std::string&, 
+				const std::string&, 
+				const std::string&,
+				const std::vector<std::string>&,
+				const std::vector<std::string>&,
+				std::pair<long double, long double>, 
+				long double,
+				long double,
+				long double, 
+				size_t,
+				size_t>(), 
+				py::arg("q"),
+				py::arg("k"),
+				py::arg("f"),
+				py::arg("phi"),
+				py::arg("left_coefficients"),
+				py::arg("right_coefficients"),
+				py::arg("space_interval"),
+				py::arg("T"),
+				py::arg("h"),
+				py::arg("tau"),
+				py::arg("rarefaction_ratio_x"),
+				py::arg("rarefaction_ratio_t"))
+			.def("GetXs", &DynS::ParabolicPartialDifferentialEquation::GetXs, "Gets x coordinates of matrix")
+			.def("GetTs", &DynS::ParabolicPartialDifferentialEquation::GetTs, "Gets t coordinates of matrix")
+			.def("Solution", &DynS::ParabolicPartialDifferentialEquation::Solution, "Returns matrix of solution by an implicit second-order method");
+
 		py::class_<DynS::SecondOrderODESolver>(
 			module_handle, "SecondOrderODESolver"
 			).def(py::init<std::vector<std::pair<std::string, std::string>>, Eigen::Matrix<double, 2, 3>, std::pair<double, double>, size_t>())
