@@ -1241,7 +1241,8 @@ namespace DynS
 		h(h), 
 		tau(tau), 
 		offset_h(rarefaction_ratio_x), 
-		offset_tau(rarefaction_ratio_t)
+		offset_tau(rarefaction_ratio_t),
+		is_solved(false)
 	{
 		//Check for invalid input
 		if (this->tau < DBL_EPSILON)
@@ -1410,6 +1411,7 @@ namespace DynS
 
 			//Solve linear system
 			last_layer = A.colPivHouseholderQr().solve(B);
+			//last_layer = A.householderQr().solve(B);
 
 			//Storing the values into u-matrix
 			if (m % this->offset_tau == 0 || m == M - 1)
@@ -1420,11 +1422,14 @@ namespace DynS
 				this->ts.push_back(current_time);
 			}
 		}
+
+		//Solve is complete
+		this->is_solved = true;
 	}
 
 }
 
-///*
+/*
 #ifndef _DEBUG
 	
 	// Needed for export to Python
@@ -1484,4 +1489,4 @@ namespace DynS
 	}
 
 #endif // !_DEBUG
-//*/
+*/

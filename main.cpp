@@ -253,10 +253,10 @@ nlohmann::json PoincareMap(nlohmann::json& input_json)
 {
 	InputDataMain input_data = input_json;
 	PlaneEquation planeEquation;
-	planeEquation.A = input_data.planeEquation[0];
-	planeEquation.B = input_data.planeEquation[1];
-	planeEquation.C = input_data.planeEquation[2];
-	planeEquation.D = input_data.planeEquation[3];
+	std::get<0>(planeEquation) = input_data.planeEquation[0];
+	std::get<1>(planeEquation) = input_data.planeEquation[1];
+	std::get<2>(planeEquation) = input_data.planeEquation[2];
+	std::get<3>(planeEquation) = input_data.planeEquation[3];
 	std::vector<Eigen::VectorXld> trajectory = input_data.trajectory;
 	std::pair<std::vector<Eigen::Vector2ld>, std::vector<Eigen::Vector3ld>> result = DynS::GetPoincareMap(planeEquation, trajectory);
 	OutputDataMain output_data{};
@@ -388,7 +388,7 @@ nlohmann::json HyperbolicPartialDifferentialEquation(nlohmann::json& input_json)
 nlohmann::json ParabolicPartialDifferentialEquation(nlohmann::json& input_json)
 {
 	InputDataMain input_data = input_json;
-	DynS::ParabolicPartialDifferentialEquation equation(input_data.q, input_data.k, input_data.f, input_data.phi, {"0", "1", "0"}, {"0", "1", "0"}, input_data.space_interval, input_data.T, input_data.h, input_data.tau, 10, 10);
+	DynS::ParabolicPartialDifferentialEquation equation(input_data.q, input_data.k, input_data.f, input_data.phi, {"0", "1", "10"}, {"0", "1", "0"}, input_data.space_interval, input_data.T, input_data.h, input_data.tau, 10, 10);
 	Eigen::MatrixXld solution = equation.Solution();
 	std::ofstream ffout;
 	ffout.open("SolutionPlot.csv");
