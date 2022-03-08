@@ -1279,6 +1279,8 @@ namespace DynS
 		ParseWithError(phi, this->phi, "x");
 		std::ranges::transform(left_coefficients, std::back_inserter(this->left_coefficients), GetParseFunctionOfTime);
 		std::ranges::transform(right_coefficients, std::back_inserter(this->right_coefficients), GetParseFunctionOfTime);
+
+		this->is_solved = false;
 	}
 
 	const Eigen::MatrixXld& ParabolicPartialDifferentialEquation::Solution()
@@ -1420,6 +1422,8 @@ namespace DynS
 				this->ts.push_back(current_time);
 			}
 		}
+
+		this->is_solved = true;
 	}
 
 }
