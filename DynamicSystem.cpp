@@ -1429,7 +1429,6 @@ namespace DynS
 
 }
 
-/*
 #ifndef _DEBUG
 	
 	// Needed for export to Python
@@ -1532,4 +1531,3 @@ namespace DynS
 	}
 
 #endif // !_DEBUG
-*/
