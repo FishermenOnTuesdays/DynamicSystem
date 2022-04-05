@@ -346,7 +346,7 @@ namespace DynS
 			Eigen::VectorXld diagonal = QR.matrixQR().diagonal();
 			for (size_t j = 0; j < this->dimension; j++)
 			{
-				sums_of_logarithms[j] += logl(fabsl(diagonal(j)));
+				sums_of_logarithms[j] += logl(fabs(diagonal(j)));
 			}
 			variation_matrix = QR.householderQ();
 		}
@@ -385,7 +385,7 @@ namespace DynS
 				auto QR = variation_matrix.householderQr();
 				Eigen::VectorXld diagonal = QR.matrixQR().diagonal();
 				for (size_t j = 0; j < this->dimension; j++)
-					sums_of_logarithms[j] += logl(fabsl(diagonal(j)));
+					sums_of_logarithms[j] += logl(fabs(diagonal(j)));
 				variation_matrix = QR.householderQ();
 				if (i != 0)
 				{
@@ -678,10 +678,10 @@ namespace DynS
 		this->ExplicitRungeKuttaFourthOrder();
 	}
 
-	const long double powl24 = powl(2, 4);
+	const long double pow24 = pow(2, 4);
 
 	long double RichardsonExtrapolation4Error(long double smallerStepNorm, long double largerStepNorm) {
-		return abs(abs(powl24 * smallerStepNorm - largerStepNorm) / (powl24 - 1) - abs(smallerStepNorm));
+		return abs(abs(pow24 * smallerStepNorm - largerStepNorm) / (pow24 - 1) - abs(smallerStepNorm));
 	}
 	
 	void DynamicSystem::AdaptiveExplicitRungeKuttaFourthOrder()
@@ -696,7 +696,7 @@ namespace DynS
 		intactStepNorm = intactStep.norm();
 
 		long double richardsonExtrapolation4error = RichardsonExtrapolation4Error(halfStepNorm, intactStepNorm);
-		this->dt = 0.9 * (this->dt / 2) * powl((epsilon * 10000) / richardsonExtrapolation4error, 1. / 4.);
+		this->dt = 0.9 * (this->dt / 2) * pow((epsilon * 10000) / richardsonExtrapolation4error, 1. / 4.);
 		this->ExplicitRungeKuttaFourthOrder();
 	}
 
@@ -724,12 +724,12 @@ namespace DynS
 	bool DynamicSystem::IsHard()
 	{
 		Eigen::VectorXcld eigenvalues = this->jacobian_matrix.eigenvalues();
-		long double max_eigenvalue = fabsl(eigenvalues(0).real());
-		//long double min_eigenvalue = fabsl(eigenvalues(0).real());
+		long double max_eigenvalue = fabs(eigenvalues(0).real());
+		//long double min_eigenvalue = fabs(eigenvalues(0).real());
 		for (size_t i = 0; i < eigenvalues.size(); i++)
 		{
-			max_eigenvalue = fabsl(eigenvalues(i).real()) > max_eigenvalue ? fabsl(eigenvalues(i).real()) : max_eigenvalue;
-			//min_eigenvalue = fabsl(eigenvalues(i).real()) < min_eigenvalue ? fabsl(eigenvalues(i).real()) : min_eigenvalue;
+			max_eigenvalue = fabs(eigenvalues(i).real()) > max_eigenvalue ? fabs(eigenvalues(i).real()) : max_eigenvalue;
+			//min_eigenvalue = fabs(eigenvalues(i).real()) < min_eigenvalue ? fabs(eigenvalues(i).real()) : min_eigenvalue;
 		}
 		return this->dt > 1. / max_eigenvalue;
 		//return max_eigenvalue / min_eigenvalue > hard_number ? true : false;
@@ -844,11 +844,11 @@ namespace DynS
 		long double store_h = this->h;
 		long double store_tau = this->tau;
 
-		if (std::fabsl(2 * this->h * std::get<1>(this->left_coefficients)
+		if (std::fabs(2 * this->h * std::get<1>(this->left_coefficients)
 			-
 			3 * std::get<0>(this->left_coefficients)) < DBL_EPSILON)
 			this->h /= 2;
-		if (std::fabsl(2 * this->h * std::get<1>(this->right_coefficients)
+		if (std::fabs(2 * this->h * std::get<1>(this->right_coefficients)
 			+
 			3 * std::get<0>(this->right_coefficients)) < DBL_EPSILON)
 			this->h /= 2;
@@ -861,10 +861,10 @@ namespace DynS
 		Eigen::Vector2ld previous_x_t = { this->space_interval.first, this->tau };
 
 		long double minimum = this->f.Eval(x_t.data()) * this->g.Eval(x_t.data());
-		long double maximum = std::powl(this->f.Eval(x_t.data())*
+		long double maximum = std::pow(this->f.Eval(x_t.data())*
 			(this->g.Eval(next_x_t.data()) - this->g.Eval(previous_x_t.data()) / 4), 2)
 			+
-			std::powl(this->f.Eval(x_t.data()) * this->g.Eval(x_t.data()), 2);
+			std::pow(this->f.Eval(x_t.data()) * this->g.Eval(x_t.data()), 2);
 
 		for (; x_t(1) < this->T; x_t(1) += this->tau)
 		{
@@ -872,10 +872,10 @@ namespace DynS
 				x_t(0) += this->h, next_x_t(0) += this->h, previous_x_t(0) += this->h)
 			{
 				long double right_expression = this->f.Eval(x_t.data()) * this->g.Eval(x_t.data());
-				long double left_expression = std::powl(this->f.Eval(x_t.data()) *
+				long double left_expression = std::pow(this->f.Eval(x_t.data()) *
 					(this->g.Eval(next_x_t.data()) - this->g.Eval(previous_x_t.data()) / 4), 2)
 					+
-					std::powl(this->f.Eval(x_t.data()) * this->g.Eval(x_t.data()), 2);
+					std::pow(this->f.Eval(x_t.data()) * this->g.Eval(x_t.data()), 2);
 				minimum = right_expression < minimum ? right_expression : minimum;
 				maximum = left_expression > maximum ? left_expression : maximum;
 			}
@@ -1252,8 +1252,8 @@ namespace DynS
 
 		//Create empty u-matrix
 		this->u = Eigen::MatrixXld::Zero(
-			std::ceill(this->T / (rarefaction_ratio_t * this->tau)) + 1,
-			std::ceill((this->space_interval.second - this->space_interval.first) / (rarefaction_ratio_x * this->h)) + 1
+			std::ceil(this->T / (rarefaction_ratio_t * this->tau)) + 1,
+			std::ceil((this->space_interval.second - this->space_interval.first) / (rarefaction_ratio_x * this->h)) + 1
 		);
 
 		//Check for invalid input once more
@@ -1307,7 +1307,7 @@ namespace DynS
 	{
 		//Initialize last_layer of u-matrix 
 		Eigen::VectorXld last_layer = Eigen::VectorXld::Zero(
-			std::ceill((this->space_interval.second - this->space_interval.first) / this->h) + 1
+			std::ceil((this->space_interval.second - this->space_interval.first) / this->h) + 1
 		);
 
 		//Fill last_layer of u-matrix
@@ -1329,7 +1329,7 @@ namespace DynS
 
 		//Fill middle rows of u-matrix and vector ts
 		this->ts.push_back(0);
-		size_t M = std::ceill(this->T / this->tau) + 1;
+		size_t M = std::ceil(this->T / this->tau) + 1;
 		for (size_t m = 1; m < M; m++)
 		{
 			//Set current time
@@ -1379,7 +1379,7 @@ namespace DynS
 					(n - 0.5) * this->h, 
 					current_time 
 				};
-				long double factor = last_tau / (2 * std::powl(this->h, 2));
+				long double factor = last_tau / (2 * std::pow(this->h, 2));
 				long double current_q = this->q.Eval(current_point.data());
 				long double current_f = this->f.Eval(current_point.data());
 				long double current_plus_half_k = this->k.Eval(current_point_plus_half.data());

@@ -16,6 +16,7 @@
 #include <vector>
 #include <utility>
 #include <map>
+#include <ranges>
 #include <omp.h>
 #include <string>
 #include <cmath>
