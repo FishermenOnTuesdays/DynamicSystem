@@ -97,9 +97,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\include;$(SolutionDir)\include\eigen-3.3.9;$(SolutionDir)\include\fparser;$(SolutionDir)\include\fparser\extrasrc;$(SolutionDir)\include\viennacl;$(SolutionDir)\include\igl</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\include;$(SolutionDir)\include\eigen;$(SolutionDir)\include\fparser;$(SolutionDir)\include\fparser\extrasrc;$(SolutionDir)\include\viennacl;$(SolutionDir)\include\igl</AdditionalIncludeDirectories>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -116,9 +116,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\include;$(SolutionDir)\include\eigen-3.3.9;$(SolutionDir)\include\fparser;$(SolutionDir)\include\fparser\extrasrc;$(SolutionDir)\include\viennacl;$(SolutionDir)\include\igl</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\include;$(SolutionDir)\include\eigen;$(SolutionDir)\include\fparser;$(SolutionDir)\include\fparser\extrasrc;$(SolutionDir)\include\viennacl;$(SolutionDir)\include\igl</AdditionalIncludeDirectories>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -134,9 +134,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\include;$(SolutionDir)\include\eigen-3.3.9;$(SolutionDir)\include\fparser;$(SolutionDir)\include\fparser\extrasrc;$(SolutionDir)\include\viennacl;$(SolutionDir)\include\igl</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\include;$(SolutionDir)\include\eigen;$(SolutionDir)\include\fparser;$(SolutionDir)\include\fparser\extrasrc;$(SolutionDir)\include\viennacl;$(SolutionDir)\include\igl</AdditionalIncludeDirectories>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -153,9 +153,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\include;$(SolutionDir)\include\eigen-3.3.9;$(SolutionDir)\include\fparser;$(SolutionDir)\include\fparser\extrasrc;$(SolutionDir)\include\viennacl;$(SolutionDir)\include\igl</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\include;$(SolutionDir)\include\eigen;$(SolutionDir)\include\fparser;$(SolutionDir)\include\fparser\extrasrc;$(SolutionDir)\include\viennacl;$(SolutionDir)\include\igl</AdditionalIncludeDirectories>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>

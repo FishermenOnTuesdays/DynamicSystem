@@ -1278,8 +1278,8 @@ namespace DynS
 		ParseWithError(k, this->k, "u,x,t");
 		ParseWithError(f, this->f, "u,x,t");
 		ParseWithError(phi, this->phi, "x");
-		std::ranges::transform(left_coefficients, std::back_inserter(this->left_coefficients), GetParseFunctionOfTime);
-		std::ranges::transform(right_coefficients, std::back_inserter(this->right_coefficients), GetParseFunctionOfTime);
+		std::transform(left_coefficients.begin(), left_coefficients.end(), std::back_inserter(this->left_coefficients), GetParseFunctionOfTime);
+		std::transform(right_coefficients.begin(), right_coefficients.end(), std::back_inserter(this->right_coefficients), GetParseFunctionOfTime);
 	}
 
 	const Eigen::MatrixXld& ParabolicPartialDifferentialEquation::Solution()
@@ -1355,7 +1355,7 @@ namespace DynS
 			{
 				return function.Eval(&current_time);
 			};
-			std::ranges::transform(this->left_coefficients, std::back_inserter(current_left_coefficients), EvalOfTime);
+			std::transform(this->left_coefficients.begin(), this->left_coefficients.end(), std::back_inserter(current_left_coefficients), EvalOfTime);
 			A(0, 0) = current_left_coefficients[1] - 1.5 * current_left_coefficients[0] / this->h;
 			A(0, 1) = 2 * current_left_coefficients[0] / this->h;
 			A(0, 2) = -current_left_coefficients[0] / (2 * this->h);
@@ -1399,7 +1399,7 @@ namespace DynS
 
 			//Fill last row of matrix A and element of vector B
 			std::vector<long double> current_right_coefficients;
-			std::ranges::transform(this->right_coefficients, std::back_inserter(current_right_coefficients), EvalOfTime);
+			std::transform(this->right_coefficients.begin(), this->right_coefficients.end(), std::back_inserter(current_right_coefficients), EvalOfTime);
 			long double last_h = this->space_interval.second - this->space_interval.first + (A.rows() - 1) * this->h;
 			A(A.rows() - 1, A.cols() - 3) = 
 				current_right_coefficients[0] * last_h / (this->h * (this->h + last_h));
