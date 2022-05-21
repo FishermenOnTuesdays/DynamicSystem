@@ -17,14 +17,31 @@ namespace DynS
 		long double dt
 	)
 	{
-		size_t number_of_dots = (ranges.first.second - ranges.first.first) * (ranges.second.second - ranges.second.first) / steps.first / steps.second;
-		size_t number_of_y = (ranges.second.second - ranges.second.first) / steps.second;
+		size_t number_of_dots = (ceil((ranges.first.second - ranges.first.first) / steps.first) + 1) * (ceil((ranges.second.second - ranges.second.first) / steps.second) + 1);
+		size_t number_of_y = ceil((ranges.second.second - ranges.second.first) / steps.second) + 1;
+		size_t number_of_x = ceil((ranges.first.second - ranges.first.first) / steps.first) + 1;
 		std::vector<std::pair<std::pair<long double, long double>, long double>> map_lyapunov_spectrum{ number_of_dots };
 		#pragma omp parallel for
 		for (int i = 0; i < number_of_dots; i++)
 		{
-			long double first_parameter = ranges.first.first + (i / number_of_y) * steps.first;
-			long double second_parameter = ranges.second.first + (i % number_of_y) * steps.second;
+			long double first_parameter;
+			long double second_parameter;
+			if (i % number_of_y == number_of_y - 1)
+			{
+				second_parameter = ranges.second.second;
+			}
+			else
+			{
+				second_parameter = ranges.second.first + (i % number_of_y) * steps.second;
+			}
+			if (i / number_of_y == number_of_x - 1)
+			{
+				first_parameter = ranges.first.second;
+			}
+			else
+			{
+				first_parameter = ranges.first.first + (i / number_of_y) * steps.first;
+			}
 			DynamicSystem dynamic_system{
 					starting_point,
 					strings_functions,
