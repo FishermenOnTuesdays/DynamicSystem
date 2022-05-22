@@ -1372,63 +1372,69 @@ namespace DynS
 			{
 				return function.Eval(&current_time);
 			};
-			std::transform(this->left_coefficients.begin(), this->left_coefficients.end(), std::back_inserter(current_left_coefficients), EvalOfTime);
-			A(0, 0) = current_left_coefficients[1] - 1.5 * current_left_coefficients[0] / this->h;
-			A(0, 1) = 2 * current_left_coefficients[0] / this->h;
-			A(0, 2) = -current_left_coefficients[0] / (2 * this->h);
-			B(0) = current_left_coefficients[2];
 
-			//Fill middle rows of matrix A and elements of vector B
-			for (size_t n = 1; n < A.rows() - 1; n++)
+			for (size_t i = 0; i < 3; i++)
 			{
-				std::vector<long double> current_point = { 
-					last_layer(n), 
-					n * this->h, 
-					current_time 
-				};
-				std::vector<long double> current_point_plus_half = { 
-					(last_layer(n) + last_layer(n - 1)) / 2, 
-					(n + 0.5) * this->h, 
-					current_time 
-				};
-				std::vector<long double> current_point_minus_half = { 
-					(last_layer(n) + last_layer(n - 1)) / 2, 
-					(n - 0.5) * this->h, 
-					current_time 
-				};
-				long double factor = last_tau / (2 * std::pow(this->h, 2));
-				long double current_q = this->q.Eval(current_point.data());
-				long double current_f = this->f.Eval(current_point.data());
-				long double current_plus_half_k = this->k.Eval(current_point_plus_half.data());
-				long double current_minus_half_k = this->k.Eval(current_point_minus_half.data());
-				long double previous_coefficient = factor * current_q * current_minus_half_k;
-				long double next_coefficient = factor * current_q * current_plus_half_k;
-				long double current_coefficient = previous_coefficient + next_coefficient;
-				A(n, n - 1) = -previous_coefficient;
-				A(n, n) = 1 + current_coefficient;
-				A(n, n + 1) = -next_coefficient;
-				B(n) =
-					previous_coefficient * last_layer(n - 1) +
-					(1 - current_coefficient) * last_layer(n) +
-					next_coefficient * last_layer(n + 1) +
-					last_tau * current_f;
+
+				std::transform(this->left_coefficients.begin(), this->left_coefficients.end(), std::back_inserter(current_left_coefficients), EvalOfTime);
+				A(0, 0) = current_left_coefficients[1] - 1.5 * current_left_coefficients[0] / this->h;
+				A(0, 1) = 2 * current_left_coefficients[0] / this->h;
+				A(0, 2) = -current_left_coefficients[0] / (2 * this->h);
+				B(0) = current_left_coefficients[2];
+
+				//Fill middle rows of matrix A and elements of vector B
+				for (size_t n = 1; n < A.rows() - 1; n++)
+				{
+					std::vector<long double> current_point = {
+						last_layer(n),
+						n * this->h,
+						current_time
+					};
+					std::vector<long double> current_point_plus_half = {
+						(last_layer(n) + last_layer(n - 1)) / 2,
+						(n + 0.5) * this->h,
+						current_time
+					};
+					std::vector<long double> current_point_minus_half = {
+						(last_layer(n) + last_layer(n - 1)) / 2,
+						(n - 0.5) * this->h,
+						current_time
+					};
+					long double factor = last_tau / (2 * std::pow(this->h, 2));
+					long double current_q = this->q.Eval(current_point.data());
+					long double current_f = this->f.Eval(current_point.data());
+					long double current_plus_half_k = this->k.Eval(current_point_plus_half.data());
+					long double current_minus_half_k = this->k.Eval(current_point_minus_half.data());
+					long double previous_coefficient = factor * current_q * current_minus_half_k;
+					long double next_coefficient = factor * current_q * current_plus_half_k;
+					long double current_coefficient = previous_coefficient + next_coefficient;
+					A(n, n - 1) = -previous_coefficient;
+					A(n, n) = 1 + current_coefficient;
+					A(n, n + 1) = -next_coefficient;
+					B(n) =
+						previous_coefficient * last_layer(n - 1) +
+						(1 - current_coefficient) * last_layer(n) +
+						next_coefficient * last_layer(n + 1) +
+						last_tau * current_f;
+				}
+
+				//Fill last row of matrix A and element of vector B
+				std::vector<long double> current_right_coefficients;
+				std::transform(this->right_coefficients.begin(), this->right_coefficients.end(), std::back_inserter(current_right_coefficients), EvalOfTime);
+				long double last_h = this->space_interval.second - this->space_interval.first + (A.rows() - 1) * this->h;
+				A(A.rows() - 1, A.cols() - 3) =
+					current_right_coefficients[0] * last_h / (this->h * (this->h + last_h));
+				A(A.rows() - 1, A.cols() - 2) =
+					-current_right_coefficients[0] * (this->h + last_h) / (this->h * last_h);
+				A(A.rows() - 1, A.cols() - 1) =
+					current_right_coefficients[1] + current_right_coefficients[0] * (2 * last_h + this->h) / (last_h * (this->h + last_h));
+				B(B.size() - 1) = current_right_coefficients[2];
+
+				//Solve linear system
+				last_layer = A.colPivHouseholderQr().solve(B);
+				//last_layer = A.householderQr().solve(B);
+
 			}
-
-			//Fill last row of matrix A and element of vector B
-			std::vector<long double> current_right_coefficients;
-			std::transform(this->right_coefficients.begin(), this->right_coefficients.end(), std::back_inserter(current_right_coefficients), EvalOfTime);
-			long double last_h = this->space_interval.second - this->space_interval.first + (A.rows() - 1) * this->h;
-			A(A.rows() - 1, A.cols() - 3) = 
-				current_right_coefficients[0] * last_h / (this->h * (this->h + last_h));
-			A(A.rows() - 1, A.cols() - 2) = 
-				-current_right_coefficients[0] * (this->h + last_h) / (this->h * last_h);
-			A(A.rows() - 1, A.cols() - 1) =
-				current_right_coefficients[1] + current_right_coefficients[0] * (2 * last_h + this->h) / (last_h * (this->h + last_h));
-			B(B.size() - 1) = current_right_coefficients[2];
-
-			//Solve linear system
-			last_layer = A.colPivHouseholderQr().solve(B);
-			//last_layer = A.householderQr().solve(B);
 
 			//Storing the values into u-matrix
 			if (m % this->offset_tau == 0 || m == M - 1)
