@@ -1373,7 +1373,7 @@ namespace DynS
 				return function.Eval(&current_time);
 			};
 
-			for (size_t i = 0; i < 3; i++)
+			for (size_t i = 0; i < 100; i++)
 			{
 
 				std::transform(this->left_coefficients.begin(), this->left_coefficients.end(), std::back_inserter(current_left_coefficients), EvalOfTime);
