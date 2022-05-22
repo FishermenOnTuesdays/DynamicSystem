@@ -1400,22 +1400,18 @@ namespace DynS
 						(n - 0.5) * this->h,
 						current_time
 					};
-					long double factor = last_tau / (2 * std::pow(this->h, 2));
 					long double current_q = this->q.Eval(current_point.data());
 					long double current_f = this->f.Eval(current_point.data());
 					long double current_plus_half_k = this->k.Eval(current_point_plus_half.data());
 					long double current_minus_half_k = this->k.Eval(current_point_minus_half.data());
-					long double previous_coefficient = factor * current_q * current_minus_half_k;
-					long double next_coefficient = factor * current_q * current_plus_half_k;
-					long double current_coefficient = previous_coefficient + next_coefficient;
-					A(n, n - 1) = -previous_coefficient;
-					A(n, n) = 1 + current_coefficient;
-					A(n, n + 1) = -next_coefficient;
-					B(n) =
-						previous_coefficient * last_layer(n - 1) +
-						(1 - current_coefficient) * last_layer(n) +
-						next_coefficient * last_layer(n + 1) +
-						last_tau * current_f;
+					long double factor = last_tau * current_q / (std::pow(this->h, 2));
+					long double previous_coefficient = factor * current_minus_half_k;
+					long double next_coefficient = factor * current_plus_half_k;
+					long double current_coefficient = -(1 + previous_coefficient + next_coefficient);
+					A(n, n - 1) = previous_coefficient;
+					A(n, n) = current_coefficient;
+					A(n, n + 1) = next_coefficient;
+					B(n) = -(last_layer(n) + last_tau * current_f);
 				}
 
 				//Fill last row of matrix A and element of vector B
