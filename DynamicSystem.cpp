@@ -1392,18 +1392,28 @@ namespace DynS
 					};
 					std::vector<long double> current_point_plus_half = {
 						(last_layer(n) + last_layer(n + 1)) / 2,
-						n * this->h,
+						(n + 1./2) * this->h,
 						current_time
 					};
 					std::vector<long double> current_point_minus_half = {
 						(last_layer(n) + last_layer(n - 1)) / 2,
-						n * this->h,
+						(n - 1./2) * this->h,
+						current_time
+					};
+					std::vector<long double> current_point_plus_one = {
+						last_layer(n + 1),
+						(n + 1) * this->h,
+						current_time
+					};
+					std::vector<long double> current_point_minus_one = {
+						last_layer(n - 1),
+						(n - 1) * this->h,
 						current_time
 					};
 					long double current_q = this->q.Eval(current_point.data());
 					long double current_f = this->f.Eval(current_point.data());
-					long double current_plus_half_k = this->k.Eval(current_point_plus_half.data());
-					long double current_minus_half_k = this->k.Eval(current_point_minus_half.data());
+					long double current_plus_half_k = (this->k.Eval(current_point_plus_one.data()) + this->k.Eval(current_point.data())) / 2.;//this->k.Eval(current_point_plus_half.data());
+					long double current_minus_half_k = (this->k.Eval(current_point_minus_one.data()) + this->k.Eval(current_point.data())) / 2.;//this->k.Eval(current_point_minus_half.data());
 					long double factor = last_tau * current_q / (std::pow(this->h, 2));
 					long double previous_coefficient = factor * current_minus_half_k;
 					long double next_coefficient = factor * current_plus_half_k;
