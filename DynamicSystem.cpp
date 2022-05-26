@@ -1391,13 +1391,13 @@ namespace DynS
 						current_time
 					};
 					std::vector<long double> current_point_plus_half = {
-						(last_layer(n) + last_layer(n - 1)) / 2,
-						(n + 0.5) * this->h,
+						(last_layer(n) + last_layer(n + 1)) / 2,
+						n * this->h,
 						current_time
 					};
 					std::vector<long double> current_point_minus_half = {
 						(last_layer(n) + last_layer(n - 1)) / 2,
-						(n - 0.5) * this->h,
+						n * this->h,
 						current_time
 					};
 					long double current_q = this->q.Eval(current_point.data());
