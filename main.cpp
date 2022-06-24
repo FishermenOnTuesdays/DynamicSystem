@@ -365,7 +365,7 @@ nlohmann::json HyperbolicPartialDifferentialEquation(nlohmann::json& input_json)
 		for (size_t n = 0; n < solution.cols(); n++)
 		{
 			ffout << solution(m, n) << ", ";
-			max_u = std::fabsl(solution(m, n)) > max_u ? std::fabsl(solution(m, n)) : max_u;
+			max_u = std::fabs(solution(m, n)) > max_u ? std::fabs(solution(m, n)) : max_u;
 		}
 		ffout << "\n";
 	}
