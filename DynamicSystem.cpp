@@ -178,66 +178,151 @@ namespace DynS
 		return result;
 	}
 
+	//// Bifurcation map
+	//std::vector<long double> GetBifurcationMap(std::vector<Eigen::VectorXld> trajectory)
+	//{
+	//	/*Use Eigen library for vector-matrix computation*/
+	//	//Also you have this->trajectory for this method
+
+	//	// assume 3d trajectory
+	//	PlaneEquation planeEquation = PlaneEquation{-1, -1, -1, 0};
+	//	long double A = std::get<0>(planeEquation);
+	//	long double B = std::get<1>(planeEquation);
+	//	long double C = std::get<2>(planeEquation);
+	//	long double D = std::get<3>(planeEquation);
+
+	//	Basis3ld basis = transformBasis(Eigen::Vector3ld(A, B, C));
+
+	//	//std::vector<Eigen::Vector3ld> intersections3;
+	//	//std::vector<Eigen::Vector2ld> intersections2;
+	//	std::vector<long double> intersections1;
+
+	//	Eigen::Vector3ld prevpoint;
+	//	Eigen::Vector3ld point;
+	//	Eigen::Vector3ld intersectionPoint;
+	//	Eigen::Vector2ld intersectionPoint2;
+	//	//long double intersectionPoint1;
+	//	int prevsign;
+	//	int sign;
+	//	prevsign = SideSign(planeEquation, point);
+
+	//	int N = trajectory.size();
+	//	for (int i = 1; i < N; i++) {
+	//		point = trajectory[i];
+	//		sign = SideSign(planeEquation, point);
+	//		if (sign == 0) {
+	//			intersectionPoint = point;
+	//			//intersections3.push_back(intersectionPoint);
+	//			intersectionPoint2 = applyBasis(basis, intersectionPoint);
+	//			//intersections2.push_back(applyBasis(basis, intersectionPoint));
+	//			intersections1.push_back(intersectionPoint2[0]);
+	//		}
+	//		else if (sign != prevsign) {
+	//			intersectionPoint = point;
+	//			//intersections.push_back(intersectionPoint);
+	//			///*
+	//			intersectionPoint = intersectionCalc(planeEquation, prevpoint, point);
+	//			//if (IsOnInterval(prevpoint, point, intersectionPoint))
+	//			//intersections3.push_back(intersectionPoint);
+	//			intersectionPoint2 = applyBasis(basis, intersectionPoint);
+	//			//intersections2.push_back(applyBasis(basis, intersectionPoint));
+	//			intersections1.push_back(intersectionPoint2[1]);
+	//			//*/
+	//		}
+	//		prevpoint = point;
+	//		prevsign = sign;
+	//	}
+
+	//	//BifurcationMapData result = BifurcationMapData();
+	//	//result.intersections2D = intersections2;
+	//	//result.intersections3D = intersections3;
+	//	//result.intersections1D = intersections1;
+	//	return intersections1;
+	//}
+
 	// Bifurcation map
-	std::vector<long double> GetBifurcationMap(std::vector<Eigen::VectorXld> trajectory)
+	std::vector<std::vector<long double>> GetBifurcationMap(const Eigen::VectorXld& starting_point, const std::vector<std::string>& strings_functions, std::string variables, std::string additional_variables, long double time, long double dt, std::string parameter, std::pair<long double, long double> parameter_range, long double step)
 	{
 		/*Use Eigen library for vector-matrix computation*/
 		//Also you have this->trajectory for this method
+		size_t number_of_trajectories = (parameter_range.second - parameter_range.first) / step;
+		//std::vector<std::map<std::string, std::vector<long double>>> trajectories(number_of_trajectories);
+		std::vector<std::vector<long double>> BifurcationMap(number_of_trajectories);
+		
+#pragma omp parallel for
+		for (int i = 0; i < number_of_trajectories; i++)
+		{
+			long double parameter_value = parameter_range.first + i * step;
+			DynamicSystem dynamic_system = DynamicSystem(
+				starting_point,
+				strings_functions,
+				variables,
+				additional_variables +
+				parameter + ":=" + std::to_string(parameter_value) + ";"
+			);
+			dynamic_system.SetDt(dt);
+			auto trajectory = dynamic_system.GetTrajectory(time);
 
-		// assume 3d trajectory
-		PlaneEquation planeEquation = PlaneEquation{-1, -1, -1, 0};
-		long double A = std::get<0>(planeEquation);
-		long double B = std::get<1>(planeEquation);
-		long double C = std::get<2>(planeEquation);
-		long double D = std::get<3>(planeEquation);
+			/*Use Eigen library for vector-matrix computation*/
+			//Also you have this->trajectory for this method
 
-		Basis3ld basis = transformBasis(Eigen::Vector3ld(A, B, C));
+			// assume 3d trajectory
+			PlaneEquation planeEquation = PlaneEquation{ -1, -1, -1, 0 };
+			long double A = std::get<0>(planeEquation);
+			long double B = std::get<1>(planeEquation);
+			long double C = std::get<2>(planeEquation);
+			long double D = std::get<3>(planeEquation);
 
-		//std::vector<Eigen::Vector3ld> intersections3;
-		//std::vector<Eigen::Vector2ld> intersections2;
-		std::vector<long double> intersections1;
+			Basis3ld basis = transformBasis(Eigen::Vector3ld(A, B, C));
 
-		Eigen::Vector3ld prevpoint;
-		Eigen::Vector3ld point;
-		Eigen::Vector3ld intersectionPoint;
-		Eigen::Vector2ld intersectionPoint2;
-		//long double intersectionPoint1;
-		int prevsign;
-		int sign;
-		prevsign = SideSign(planeEquation, point);
+			//std::vector<Eigen::Vector3ld> intersections3;
+			//std::vector<Eigen::Vector2ld> intersections2;
+			std::vector<long double> intersections1;
 
-		int N = trajectory.size();
-		for (int i = 1; i < N; i++) {
-			point = trajectory[i];
-			sign = SideSign(planeEquation, point);
-			if (sign == 0) {
-				intersectionPoint = point;
-				//intersections3.push_back(intersectionPoint);
-				intersectionPoint2 = applyBasis(basis, intersectionPoint);
-				//intersections2.push_back(applyBasis(basis, intersectionPoint));
-				intersections1.push_back(intersectionPoint2[0]);
+			Eigen::Vector3ld prevpoint;
+			Eigen::Vector3ld point;
+			Eigen::Vector3ld intersectionPoint;
+			Eigen::Vector2ld intersectionPoint2;
+			//long double intersectionPoint1;
+			int prevsign;
+			int sign;
+			prevsign = SideSign(planeEquation, point);
+
+			int N = trajectory.size();
+			for (int i = 1; i < N; i++) {
+				point = trajectory[i];
+				sign = SideSign(planeEquation, point);
+				if (sign == 0) {
+					intersectionPoint = point;
+					//intersections3.push_back(intersectionPoint);
+					intersectionPoint2 = applyBasis(basis, intersectionPoint);
+					//intersections2.push_back(applyBasis(basis, intersectionPoint));
+					intersections1.push_back(intersectionPoint2[0]);
+				}
+				else if (sign != prevsign) {
+					intersectionPoint = point;
+					//intersections.push_back(intersectionPoint);
+					///*
+					intersectionPoint = intersectionCalc(planeEquation, prevpoint, point);
+					//if (IsOnInterval(prevpoint, point, intersectionPoint))
+					//intersections3.push_back(intersectionPoint);
+					intersectionPoint2 = applyBasis(basis, intersectionPoint);
+					//intersections2.push_back(applyBasis(basis, intersectionPoint));
+					intersections1.push_back(intersectionPoint2[1]);
+					//*/
+				}
+				prevpoint = point;
+				prevsign = sign;
 			}
-			else if (sign != prevsign) {
-				intersectionPoint = point;
-				//intersections.push_back(intersectionPoint);
-				///*
-				intersectionPoint = intersectionCalc(planeEquation, prevpoint, point);
-				//if (IsOnInterval(prevpoint, point, intersectionPoint))
-				//intersections3.push_back(intersectionPoint);
-				intersectionPoint2 = applyBasis(basis, intersectionPoint);
-				//intersections2.push_back(applyBasis(basis, intersectionPoint));
-				intersections1.push_back(intersectionPoint2[1]);
-				//*/
-			}
-			prevpoint = point;
-			prevsign = sign;
+
+			//BifurcationMapData result = BifurcationMapData();
+			//result.intersections2D = intersections2;
+			//result.intersections3D = intersections3;
+			//result.intersections1D = intersections1;
+			BifurcationMap[i] = intersections1;
 		}
-
-		//BifurcationMapData result = BifurcationMapData();
-		//result.intersections2D = intersections2;
-		//result.intersections3D = intersections3;
-		//result.intersections1D = intersections1;
-		return intersections1;
+		
+		return BifurcationMap;
 	}
 
 	void TrajectoriesToObj(const std::vector<std::vector<Eigen::VectorXld>>& trajectories, Eigen::Vector3i axis_indexes, std::string name, std::string path)
@@ -737,7 +822,7 @@ namespace DynS
 		this->point_of_trajectory += (Eigen::MatrixXld::Identity(this->dimension, this->dimension) - this->jacobian_matrix * this->dt).inverse() * this->dt * f(this->point_of_trajectory);
 		this->trajectory.push_back(this->point_of_trajectory);
 	}
-
+	
 	bool DynamicSystem::IsHard()
 	{
 		Eigen::VectorXcld eigenvalues = this->jacobian_matrix.eigenvalues();
@@ -1458,105 +1543,105 @@ namespace DynS
 
 }
 
-#ifndef _DEBUG
-	
-	// Needed for export to Python
-	#include <pybind11/pybind11.h>
-	#include <pybind11/eigen.h>
-	#include <pybind11/stl.h>
-
-	namespace py = pybind11;
-
-	PYBIND11_MODULE(pydyns, module_handle) {
-		module_handle.doc() = "Numerical Solvers library. Created in MEPhI in 2022";
-		
-		module_handle.def("GetMapLyapunovExponents", &DynS::GetMapLyapunovExponents, "Returns a map of Lyapunov exponents this dynamic system");
-		module_handle.def("GetBifurcationMap", &DynS::GetBifurcationMap, "Returns Bifurcation map from input trajectory", py::arg("trajectory"));
-		module_handle.def("GetPoincareMap", &DynS::GetPoincareMap, "Returns Poincare map from input trajectory", py::arg("planeEquation"), py::arg("trajectory"));
-
-		py::class_<DynS::DynamicSystem>(
-			module_handle, "DynamicSystem"
-			).def(py::init<
-				const Eigen::VectorXld&,
-				const std::vector<std::string>&,
-				std::string,
-				std::string>(), 
-				py::arg("starting_point"),
-				py::arg("strings_functions"),
-				py::arg("variables"),
-				py::arg("additional_variables")="")
-			.def("GetTrajectory", &DynS::DynamicSystem::GetTrajectory, "Returns a sequence of trajectory's points at given time", py::arg("time"))
-			.def("GetTimeSequence", &DynS::DynamicSystem::GetTimeSequence, "Returns a Time sequence of calculated trajectory")
-			.def("GetSpectrumLyapunov", &DynS::DynamicSystem::GetSpectrumLyapunov, "Returns a spectrum of Lyapunov exponents this dynamic system", py::arg("time"))
-			.def("GetTimeSeriesSpectrumLyapunov", &DynS::DynamicSystem::GetTimeSeriesSpectrumLyapunov, "Returns a series of Lyapunov exponents spectrum at every step", py::arg("time"))
-			.def("GetPoincareMap", &DynS::DynamicSystem::GetPoincareMap, "Returns Poincare map", py::arg("plane_equation"))
-			.def("SetDt", &DynS::DynamicSystem::SetDt, "Sets dt for this dynamic system", py::arg("dt"))
-			.def("SetTime", &DynS::DynamicSystem::SetTime, "Sets time for this dynamic system", py::arg("time"))
-			.def("Reset", &DynS::DynamicSystem::Reset, "Resets dynamic system (clears trajectory and time sequence, sets time to zero and sets current point of trajectory)", py::arg("current_point"))
-			.def("ResetWithTime", &DynS::DynamicSystem::ResetWithTime, "Resets dynamic system with time point on first position (clears trajectory and time sequence, sets time to current time point and sets current point of trajectory)", py::arg("current_point_with_time"))
-			.def("SetCurrentPointOfTrajectory", &DynS::DynamicSystem::SetCurrentPointOfTrajectory, "Sets current point of dynamic system trajectory", py::arg("current_point"))
-			.def("GetErrorComment", &DynS::DynamicSystem::GetErrorComment, "Returns error comment");
-
-		py::class_<DynS::HyperbolicPartialDifferentialEquation>(
-			module_handle, "HyperbolicPartialDifferentialEquation"
-			).def(py::init<std::string, std::string, std::string, std::string, std::string,
-				std::tuple<long double, long double, long double>,
-				std::tuple<long double, long double, long double>,
-				std::pair<long double, long double>,
-				long double, long double, long double>(),
-				py::arg("f"),
-				py::arg("g"),
-				py::arg("q"),
-				py::arg("phi"),
-				py::arg("psi"),
-				py::arg("left_coefficients"),
-				py::arg("right_coefficients"),
-				py::arg("space_interval"),
-				py::arg("T"),
-				py::arg("h"),
-				py::arg("tau"))
-			.def("GetXs", &DynS::HyperbolicPartialDifferentialEquation::GetXs, "Gets x coordinates of matrix")
-			.def("GetTs", &DynS::HyperbolicPartialDifferentialEquation::GetTs, "Gets t coordinates of matrix")
-			.def("Solution", &DynS::HyperbolicPartialDifferentialEquation::Solution, "Returns matrix of solution by an explicit second-order method");
-		
-		py::class_<DynS::ParabolicPartialDifferentialEquation>(
-			module_handle, "ParabolicPartialDifferentialEquation"
-			).def(py::init<
-				const std::string&, 
-				const std::string&, 
-				const std::string&, 
-				const std::string&,
-				const std::vector<std::string>&,
-				const std::vector<std::string>&,
-				std::pair<long double, long double>, 
-				long double,
-				long double,
-				long double, 
-				size_t,
-				size_t>(), 
-				py::arg("q"),
-				py::arg("k"),
-				py::arg("f"),
-				py::arg("phi"),
-				py::arg("left_coefficients"),
-				py::arg("right_coefficients"),
-				py::arg("space_interval"),
-				py::arg("T"),
-				py::arg("h"),
-				py::arg("tau"),
-				py::arg("rarefaction_ratio_x"),
-				py::arg("rarefaction_ratio_t"))
-			.def("GetXs", &DynS::ParabolicPartialDifferentialEquation::GetXs, "Gets x coordinates of matrix")
-			.def("GetTs", &DynS::ParabolicPartialDifferentialEquation::GetTs, "Gets t coordinates of matrix")
-			.def("Solution", &DynS::ParabolicPartialDifferentialEquation::Solution, "Returns matrix of solution by an implicit second-order method");
-
-		py::class_<DynS::SecondOrderODESolver>(
-			module_handle, "SecondOrderODESolver"
-			).def(py::init<std::vector<std::pair<std::string, std::string>>, Eigen::Matrix<double, 2, 3>, std::pair<double, double>, size_t>())
-			.def("GetConditionNumber", &DynS::SecondOrderODESolver::GetConditionNumber, "Returns condition number of matrix for solving ODE")
-			.def("GetSolution", &DynS::SecondOrderODESolver::GetSolution, "Returns Y - approximation of the solution on a grid")
-			.def("GetMatrixForSolution", &DynS::SecondOrderODESolver::GetMatrixA, "Returns matrix for solving ODE");
-
-	}
-
-#endif // !_DEBUG
+//#ifndef _DEBUG
+//	
+//	// Needed for export to Python
+//	#include <pybind11/pybind11.h>
+//	#include <pybind11/eigen.h>
+//	#include <pybind11/stl.h>
+//
+//	namespace py = pybind11;
+//
+//	PYBIND11_MODULE(pydyns, module_handle) {
+//		module_handle.doc() = "Numerical Solvers library. Created in MEPhI in 2022";
+//		
+//		module_handle.def("GetMapLyapunovExponents", &DynS::GetMapLyapunovExponents, "Returns a map of Lyapunov exponents this dynamic system");
+//		module_handle.def("GetBifurcationMap", &DynS::GetBifurcationMap, "Returns Bifurcation map from input trajectory", py::arg("trajectory"));
+//		module_handle.def("GetPoincareMap", &DynS::GetPoincareMap, "Returns Poincare map from input trajectory", py::arg("planeEquation"), py::arg("trajectory"));
+//
+//		py::class_<DynS::DynamicSystem>(
+//			module_handle, "DynamicSystem"
+//			).def(py::init<
+//				const Eigen::VectorXld&,
+//				const std::vector<std::string>&,
+//				std::string,
+//				std::string>(), 
+//				py::arg("starting_point"),
+//				py::arg("strings_functions"),
+//				py::arg("variables"),
+//				py::arg("additional_variables")="")
+//			.def("GetTrajectory", &DynS::DynamicSystem::GetTrajectory, "Returns a sequence of trajectory's points at given time", py::arg("time"))
+//			.def("GetTimeSequence", &DynS::DynamicSystem::GetTimeSequence, "Returns a Time sequence of calculated trajectory")
+//			.def("GetSpectrumLyapunov", &DynS::DynamicSystem::GetSpectrumLyapunov, "Returns a spectrum of Lyapunov exponents this dynamic system", py::arg("time"))
+//			.def("GetTimeSeriesSpectrumLyapunov", &DynS::DynamicSystem::GetTimeSeriesSpectrumLyapunov, "Returns a series of Lyapunov exponents spectrum at every step", py::arg("time"))
+//			.def("GetPoincareMap", &DynS::DynamicSystem::GetPoincareMap, "Returns Poincare map", py::arg("plane_equation"))
+//			.def("SetDt", &DynS::DynamicSystem::SetDt, "Sets dt for this dynamic system", py::arg("dt"))
+//			.def("SetTime", &DynS::DynamicSystem::SetTime, "Sets time for this dynamic system", py::arg("time"))
+//			.def("Reset", &DynS::DynamicSystem::Reset, "Resets dynamic system (clears trajectory and time sequence, sets time to zero and sets current point of trajectory)", py::arg("current_point"))
+//			.def("ResetWithTime", &DynS::DynamicSystem::ResetWithTime, "Resets dynamic system with time point on first position (clears trajectory and time sequence, sets time to current time point and sets current point of trajectory)", py::arg("current_point_with_time"))
+//			.def("SetCurrentPointOfTrajectory", &DynS::DynamicSystem::SetCurrentPointOfTrajectory, "Sets current point of dynamic system trajectory", py::arg("current_point"))
+//			.def("GetErrorComment", &DynS::DynamicSystem::GetErrorComment, "Returns error comment");
+//
+//		py::class_<DynS::HyperbolicPartialDifferentialEquation>(
+//			module_handle, "HyperbolicPartialDifferentialEquation"
+//			).def(py::init<std::string, std::string, std::string, std::string, std::string,
+//				std::tuple<long double, long double, long double>,
+//				std::tuple<long double, long double, long double>,
+//				std::pair<long double, long double>,
+//				long double, long double, long double>(),
+//				py::arg("f"),
+//				py::arg("g"),
+//				py::arg("q"),
+//				py::arg("phi"),
+//				py::arg("psi"),
+//				py::arg("left_coefficients"),
+//				py::arg("right_coefficients"),
+//				py::arg("space_interval"),
+//				py::arg("T"),
+//				py::arg("h"),
+//				py::arg("tau"))
+//			.def("GetXs", &DynS::HyperbolicPartialDifferentialEquation::GetXs, "Gets x coordinates of matrix")
+//			.def("GetTs", &DynS::HyperbolicPartialDifferentialEquation::GetTs, "Gets t coordinates of matrix")
+//			.def("Solution", &DynS::HyperbolicPartialDifferentialEquation::Solution, "Returns matrix of solution by an explicit second-order method");
+//		
+//		py::class_<DynS::ParabolicPartialDifferentialEquation>(
+//			module_handle, "ParabolicPartialDifferentialEquation"
+//			).def(py::init<
+//				const std::string&, 
+//				const std::string&, 
+//				const std::string&, 
+//				const std::string&,
+//				const std::vector<std::string>&,
+//				const std::vector<std::string>&,
+//				std::pair<long double, long double>, 
+//				long double,
+//				long double,
+//				long double, 
+//				size_t,
+//				size_t>(), 
+//				py::arg("q"),
+//				py::arg("k"),
+//				py::arg("f"),
+//				py::arg("phi"),
+//				py::arg("left_coefficients"),
+//				py::arg("right_coefficients"),
+//				py::arg("space_interval"),
+//				py::arg("T"),
+//				py::arg("h"),
+//				py::arg("tau"),
+//				py::arg("rarefaction_ratio_x"),
+//				py::arg("rarefaction_ratio_t"))
+//			.def("GetXs", &DynS::ParabolicPartialDifferentialEquation::GetXs, "Gets x coordinates of matrix")
+//			.def("GetTs", &DynS::ParabolicPartialDifferentialEquation::GetTs, "Gets t coordinates of matrix")
+//			.def("Solution", &DynS::ParabolicPartialDifferentialEquation::Solution, "Returns matrix of solution by an implicit second-order method");
+//
+//		py::class_<DynS::SecondOrderODESolver>(
+//			module_handle, "SecondOrderODESolver"
+//			).def(py::init<std::vector<std::pair<std::string, std::string>>, Eigen::Matrix<double, 2, 3>, std::pair<double, double>, size_t>())
+//			.def("GetConditionNumber", &DynS::SecondOrderODESolver::GetConditionNumber, "Returns condition number of matrix for solving ODE")
+//			.def("GetSolution", &DynS::SecondOrderODESolver::GetSolution, "Returns Y - approximation of the solution on a grid")
+//			.def("GetMatrixForSolution", &DynS::SecondOrderODESolver::GetMatrixA, "Returns matrix for solving ODE");
+//
+//	}
+//
+//#endif // !_DEBUG

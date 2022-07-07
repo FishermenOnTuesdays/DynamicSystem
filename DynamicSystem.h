@@ -92,7 +92,7 @@ namespace DynS
 	std::pair<std::vector<Eigen::Vector2ld>, std::vector<Eigen::Vector3ld>> GetPoincareMap(PlaneEquation planeEquation, std::vector<Eigen::VectorXld> trajectory);
 
 	//Returns Bifurcation map from input trajectory
-	std::vector<long double> GetBifurcationMap(std::vector<Eigen::VectorXld> trajectory);
+	std::vector<std::vector<long double>> GetBifurcationMap(const Eigen::VectorXld& starting_point, const std::vector<std::string>& strings_functions, std::string variables, std::string additional_variables, long double time, long double dt, std::string parameter, std::pair<long double, long double> parameter_range, long double step);
 
 	//Convert surface from trajectories to obj
 	//trajectories - array of trajectories with n-dimensional points
@@ -192,7 +192,7 @@ namespace DynS
 		//Calculate next point of trajectory dynamic system by explicit Runge-Kutta fourth-order method
 		void ExplicitRungeKuttaFourthOrder();
 
-		//Calculate next point of trajectory dynamic system by explicit Runge-Kutta fourth-order method
+		//Calculate next point of trajectory dynamic system by implicit Euler method
 		void ImplicitEuler();
 
 		//Determines whether the system is hard
@@ -569,5 +569,5 @@ namespace DynS
 		//t value vector
 		std::vector<long double> ts;
 	};
-
+	
 }

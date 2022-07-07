@@ -276,48 +276,50 @@ nlohmann::json LyapunovMap(nlohmann::json& input_json)
 nlohmann::json Bifurcation(nlohmann::json& input_json)
 {
 	InputDataMain input_data = input_json;
-	size_t number_of_trajectories = (input_data.range.second - input_data.range.first) / input_data.step;
-	//std::vector<std::map<std::string, std::vector<long double>>> trajectories(number_of_trajectories);
-	std::vector<std::vector<long double>> BifurcationMap(number_of_trajectories);
-	//std::vector<long double> parameter_values(number_of_trajectories);
-#pragma omp parallel for
-	for (int i = 0; i < number_of_trajectories; i++)
-	{
-		long double parameter = input_data.range.first + i * input_data.step;
-		DynS::DynamicSystem dynamic_system{
-				input_data.starting_values,
-				input_data.functions,
-				input_data.variables,
-				input_data.additional_equations +
-				input_data.parameter + ":=" + std::to_string(parameter) + ";"
-		};
-		dynamic_system.SetDt(input_data.dt);
-		auto trajectory = dynamic_system.GetTrajectory(input_data.time);
-		/*
-		std::string temp_variables = input_data.variables;
-		std::replace(temp_variables.begin(), temp_variables.end(), ',', ' ');
-		std::istringstream iss(temp_variables);
-		std::vector<std::string> variables(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
-		for (auto variable : variables)
-			trajectories[i].emplace(variable, std::vector<long double>{});
-		trajectories[i].emplace("t", std::vector<long double>{});
-		*/
+//	size_t number_of_trajectories = (input_data.range.second - input_data.range.first) / input_data.step;
+//	//std::vector<std::map<std::string, std::vector<long double>>> trajectories(number_of_trajectories);
+//	std::vector<std::vector<long double>> BifurcationMap(number_of_trajectories);
+//	//std::vector<long double> parameter_values(number_of_trajectories);
+//#pragma omp parallel for
+//	for (int i = 0; i < number_of_trajectories; i++)
+//	{
+//		long double parameter = input_data.range.first + i * input_data.step;
+//		DynS::DynamicSystem dynamic_system{
+//				input_data.starting_values,
+//				input_data.functions,
+//				input_data.variables,
+//				input_data.additional_equations +
+//				input_data.parameter + ":=" + std::to_string(parameter) + ";"
+//		};
+//		dynamic_system.SetDt(input_data.dt);
+//		auto trajectory = dynamic_system.GetTrajectory(input_data.time);
+//		/*
+//		std::string temp_variables = input_data.variables;
+//		std::replace(temp_variables.begin(), temp_variables.end(), ',', ' ');
+//		std::istringstream iss(temp_variables);
+//		std::vector<std::string> variables(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
+//		for (auto variable : variables)
+//			trajectories[i].emplace(variable, std::vector<long double>{});
+//		trajectories[i].emplace("t", std::vector<long double>{});
+//		*/
+//
+//		// make Bifurcation Map
+//		BifurcationMap[i] = DynS::GetBifurcationMap(trajectory);
+//
+//		/*
+//		long double time = 0;
+//		for (const auto& point : trajectory)
+//		{
+//			for (size_t j = 0; j < variables.size(); j++)
+//				trajectories[i][variables[j]].push_back(point(j));
+//			trajectories[i]["t"].push_back(time);
+//			time += input_data.dt;
+//		}
+//		parameter_values[i] = parameter;
+//		*/
+//	}
 
-		// make Bifurcation Map
-		BifurcationMap[i] = DynS::GetBifurcationMap(trajectory);
-
-		/*
-		long double time = 0;
-		for (const auto& point : trajectory)
-		{
-			for (size_t j = 0; j < variables.size(); j++)
-				trajectories[i][variables[j]].push_back(point(j));
-			trajectories[i]["t"].push_back(time);
-			time += input_data.dt;
-		}
-		parameter_values[i] = parameter;
-		*/
-	}
+	std::vector<std::vector<long double>> BifurcationMap = DynS::GetBifurcationMap(input_data.starting_values, input_data.functions, input_data.variables, input_data.additional_equations, input_data.time, input_data.dt, input_data.parameter, input_data.range, input_data.step);
 	//OutputDataMain output_data{};
 	/*output_data.map_lyapunov_exponents =*/ //return nlohmann::json{ {"parameter", input_data.parameter}, {"parameter_values", parameter_values}, {"trajectories", trajectories} };
 	//return nlohmann::json{ output_data };
