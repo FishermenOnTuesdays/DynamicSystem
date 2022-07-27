@@ -249,7 +249,7 @@ namespace DynS
 		//std::vector<std::map<std::string, std::vector<long double>>> trajectories(number_of_trajectories);
 		std::vector<std::vector<long double>> BifurcationMap(number_of_trajectories);
 		
-#pragma omp parallel for
+		#pragma omp parallel for
 		for (int i = 0; i < number_of_trajectories; i++)
 		{
 			long double parameter_value = parameter_range.first + i * step;
@@ -1543,105 +1543,123 @@ namespace DynS
 
 }
 
-//#ifndef _DEBUG
-//	
-//	// Needed for export to Python
-//	#include <pybind11/pybind11.h>
-//	#include <pybind11/eigen.h>
-//	#include <pybind11/stl.h>
-//
-//	namespace py = pybind11;
-//
-//	PYBIND11_MODULE(pydyns, module_handle) {
-//		module_handle.doc() = "Numerical Solvers library. Created in MEPhI in 2022";
-//		
-//		module_handle.def("GetMapLyapunovExponents", &DynS::GetMapLyapunovExponents, "Returns a map of Lyapunov exponents this dynamic system");
-//		module_handle.def("GetBifurcationMap", &DynS::GetBifurcationMap, "Returns Bifurcation map from input trajectory", py::arg("trajectory"));
-//		module_handle.def("GetPoincareMap", &DynS::GetPoincareMap, "Returns Poincare map from input trajectory", py::arg("planeEquation"), py::arg("trajectory"));
-//
-//		py::class_<DynS::DynamicSystem>(
-//			module_handle, "DynamicSystem"
-//			).def(py::init<
-//				const Eigen::VectorXld&,
-//				const std::vector<std::string>&,
-//				std::string,
-//				std::string>(), 
-//				py::arg("starting_point"),
-//				py::arg("strings_functions"),
-//				py::arg("variables"),
-//				py::arg("additional_variables")="")
-//			.def("GetTrajectory", &DynS::DynamicSystem::GetTrajectory, "Returns a sequence of trajectory's points at given time", py::arg("time"))
-//			.def("GetTimeSequence", &DynS::DynamicSystem::GetTimeSequence, "Returns a Time sequence of calculated trajectory")
-//			.def("GetSpectrumLyapunov", &DynS::DynamicSystem::GetSpectrumLyapunov, "Returns a spectrum of Lyapunov exponents this dynamic system", py::arg("time"))
-//			.def("GetTimeSeriesSpectrumLyapunov", &DynS::DynamicSystem::GetTimeSeriesSpectrumLyapunov, "Returns a series of Lyapunov exponents spectrum at every step", py::arg("time"))
-//			.def("GetPoincareMap", &DynS::DynamicSystem::GetPoincareMap, "Returns Poincare map", py::arg("plane_equation"))
-//			.def("SetDt", &DynS::DynamicSystem::SetDt, "Sets dt for this dynamic system", py::arg("dt"))
-//			.def("SetTime", &DynS::DynamicSystem::SetTime, "Sets time for this dynamic system", py::arg("time"))
-//			.def("Reset", &DynS::DynamicSystem::Reset, "Resets dynamic system (clears trajectory and time sequence, sets time to zero and sets current point of trajectory)", py::arg("current_point"))
-//			.def("ResetWithTime", &DynS::DynamicSystem::ResetWithTime, "Resets dynamic system with time point on first position (clears trajectory and time sequence, sets time to current time point and sets current point of trajectory)", py::arg("current_point_with_time"))
-//			.def("SetCurrentPointOfTrajectory", &DynS::DynamicSystem::SetCurrentPointOfTrajectory, "Sets current point of dynamic system trajectory", py::arg("current_point"))
-//			.def("GetErrorComment", &DynS::DynamicSystem::GetErrorComment, "Returns error comment");
-//
-//		py::class_<DynS::HyperbolicPartialDifferentialEquation>(
-//			module_handle, "HyperbolicPartialDifferentialEquation"
-//			).def(py::init<std::string, std::string, std::string, std::string, std::string,
-//				std::tuple<long double, long double, long double>,
-//				std::tuple<long double, long double, long double>,
-//				std::pair<long double, long double>,
-//				long double, long double, long double>(),
-//				py::arg("f"),
-//				py::arg("g"),
-//				py::arg("q"),
-//				py::arg("phi"),
-//				py::arg("psi"),
-//				py::arg("left_coefficients"),
-//				py::arg("right_coefficients"),
-//				py::arg("space_interval"),
-//				py::arg("T"),
-//				py::arg("h"),
-//				py::arg("tau"))
-//			.def("GetXs", &DynS::HyperbolicPartialDifferentialEquation::GetXs, "Gets x coordinates of matrix")
-//			.def("GetTs", &DynS::HyperbolicPartialDifferentialEquation::GetTs, "Gets t coordinates of matrix")
-//			.def("Solution", &DynS::HyperbolicPartialDifferentialEquation::Solution, "Returns matrix of solution by an explicit second-order method");
-//		
-//		py::class_<DynS::ParabolicPartialDifferentialEquation>(
-//			module_handle, "ParabolicPartialDifferentialEquation"
-//			).def(py::init<
-//				const std::string&, 
-//				const std::string&, 
-//				const std::string&, 
-//				const std::string&,
-//				const std::vector<std::string>&,
-//				const std::vector<std::string>&,
-//				std::pair<long double, long double>, 
-//				long double,
-//				long double,
-//				long double, 
-//				size_t,
-//				size_t>(), 
-//				py::arg("q"),
-//				py::arg("k"),
-//				py::arg("f"),
-//				py::arg("phi"),
-//				py::arg("left_coefficients"),
-//				py::arg("right_coefficients"),
-//				py::arg("space_interval"),
-//				py::arg("T"),
-//				py::arg("h"),
-//				py::arg("tau"),
-//				py::arg("rarefaction_ratio_x"),
-//				py::arg("rarefaction_ratio_t"))
-//			.def("GetXs", &DynS::ParabolicPartialDifferentialEquation::GetXs, "Gets x coordinates of matrix")
-//			.def("GetTs", &DynS::ParabolicPartialDifferentialEquation::GetTs, "Gets t coordinates of matrix")
-//			.def("Solution", &DynS::ParabolicPartialDifferentialEquation::Solution, "Returns matrix of solution by an implicit second-order method");
-//
-//		py::class_<DynS::SecondOrderODESolver>(
-//			module_handle, "SecondOrderODESolver"
-//			).def(py::init<std::vector<std::pair<std::string, std::string>>, Eigen::Matrix<double, 2, 3>, std::pair<double, double>, size_t>())
-//			.def("GetConditionNumber", &DynS::SecondOrderODESolver::GetConditionNumber, "Returns condition number of matrix for solving ODE")
-//			.def("GetSolution", &DynS::SecondOrderODESolver::GetSolution, "Returns Y - approximation of the solution on a grid")
-//			.def("GetMatrixForSolution", &DynS::SecondOrderODESolver::GetMatrixA, "Returns matrix for solving ODE");
-//
-//	}
-//
-//#endif // !_DEBUG
+#ifndef _DEBUG
+	
+	// Needed for export to Python
+	#include <pybind11/pybind11.h>
+	#include <pybind11/eigen.h>
+	#include <pybind11/stl.h>
+
+	namespace py = pybind11;
+	using namespace pybind11::literals;
+
+	PYBIND11_MODULE(pydyns, module_handle) {
+		
+		module_handle.doc() = "Numerical Solvers library. Created in MEPhI in 2022";
+		
+		// module_handle.def("GetMapLyapunovExponents", &DynS::GetMapLyapunovExponents, "Returns a map of Lyapunov exponents this dynamic system");
+		// module_handle.def("GetBifurcationMap", &DynS::GetBifurcationMap, "Returns Bifurcation map from input trajectory", py::arg("trajectory"));
+		// module_handle.def("GetPoincareMap", &DynS::GetPoincareMap, "Returns Poincare map from input trajectory", py::arg("planeEquation"), py::arg("trajectory"));
+
+		py::class_<DynS::DynamicSystem> clsDynamicSystem(module_handle, "DynamicSystem");
+		
+		clsDynamicSystem.def(
+			py::init<
+				const Eigen::VectorXld&,
+				const std::vector<std::string>&,
+				std::string,
+				std::string
+			>(), 
+			"starting_point"_a,
+			"strings_functions"_a,
+			"variables"_a,
+			"additional_variables"_a=""
+			);
+		
+		clsDynamicSystem.def("GetTrajectory", &DynS::DynamicSystem::GetTrajectory, "Returns a sequence of trajectory's points at given time", py::arg("time"));
+		clsDynamicSystem.def("GetTimeSequence", &DynS::DynamicSystem::GetTimeSequence, "Returns a Time sequence of calculated trajectory");
+		clsDynamicSystem.def("GetSpectrumLyapunov", &DynS::DynamicSystem::GetSpectrumLyapunov, "Returns a spectrum of Lyapunov exponents this dynamic system", py::arg("time"));
+		clsDynamicSystem.def("GetTimeSeriesSpectrumLyapunov", &DynS::DynamicSystem::GetTimeSeriesSpectrumLyapunov, "Returns a series of Lyapunov exponents spectrum at every step", py::arg("time"));
+		clsDynamicSystem.def("GetPoincareMap", &DynS::DynamicSystem::GetPoincareMap, "Returns Poincare map", py::arg("plane_equation"));
+		clsDynamicSystem.def("SetDt", &DynS::DynamicSystem::SetDt, "Sets dt for this dynamic system", py::arg("dt"));
+		clsDynamicSystem.def("SetTime", &DynS::DynamicSystem::SetTime, "Sets time for this dynamic system", py::arg("time"));
+		clsDynamicSystem.def("Reset", &DynS::DynamicSystem::Reset, "Resets dynamic system (clears trajectory and time sequence, sets time to zero and sets current point of trajectory)", py::arg("current_point"));
+		clsDynamicSystem.def("ResetWithTime", &DynS::DynamicSystem::ResetWithTime, "Resets dynamic system with time point on first position (clears trajectory and time sequence, sets time to current time point and sets current point of trajectory)", py::arg("current_point_with_time"));
+		clsDynamicSystem.def("SetCurrentPointOfTrajectory", &DynS::DynamicSystem::SetCurrentPointOfTrajectory, "Sets current point of dynamic system trajectory", py::arg("current_point"));
+		clsDynamicSystem.def("GetErrorComment", &DynS::DynamicSystem::GetErrorComment, "Returns error comment");
+
+		clsDynamicSystem.def_readwrite("explicit_method", &DynS::DynamicSystem::explicit_method);
+		clsDynamicSystem.def_readwrite("implicit_method", &DynS::DynamicSystem::implicit_method);
+
+		py::enum_<DynS::DynamicSystem::ExplicitNumericalMethod>(clsDynamicSystem, "ExplicitNumericalMethod")
+			.value("RungeKuttaFourthOrder", DynS::DynamicSystem::ExplicitNumericalMethod::RungeKuttaFourthOrder)
+			.value("AdaptiveRungeKuttaFourthOrder", DynS::DynamicSystem::ExplicitNumericalMethod::AdaptiveRungeKuttaFourthOrder)
+			.value("FixedVRungeKuttaFourthOrder", DynS::DynamicSystem::ExplicitNumericalMethod::FixedVRungeKuttaFourthOrder)
+			.value("EulerExplicit", DynS::DynamicSystem::ExplicitNumericalMethod::EulerExplicit);
+		
+		py::enum_<DynS::DynamicSystem::ImplicitNumericalMethod>(clsDynamicSystem, "ImplicitNumericalMethod")
+			.value("EulerImplicit", DynS::DynamicSystem::ImplicitNumericalMethod::EulerImplicit);
+
+		py::class_<DynS::HyperbolicPartialDifferentialEquation>(
+			module_handle, "HyperbolicPartialDifferentialEquation"
+			).def(py::init<std::string, std::string, std::string, std::string, std::string,
+				std::tuple<long double, long double, long double>,
+				std::tuple<long double, long double, long double>,
+				std::pair<long double, long double>,
+				long double, long double, long double>(),
+				py::arg("f"),
+				py::arg("g"),
+				py::arg("q"),
+				py::arg("phi"),
+				py::arg("psi"),
+				py::arg("left_coefficients"),
+				py::arg("right_coefficients"),
+				py::arg("space_interval"),
+				py::arg("T"),
+				py::arg("h"),
+				py::arg("tau"))
+			.def("GetXs", &DynS::HyperbolicPartialDifferentialEquation::GetXs, "Gets x coordinates of matrix")
+			.def("GetTs", &DynS::HyperbolicPartialDifferentialEquation::GetTs, "Gets t coordinates of matrix")
+			.def("Solution", &DynS::HyperbolicPartialDifferentialEquation::Solution, "Returns matrix of solution by an explicit second-order method");
+		
+		py::class_<DynS::ParabolicPartialDifferentialEquation>(
+			module_handle, "ParabolicPartialDifferentialEquation"
+			).def(py::init<
+				const std::string&, 
+				const std::string&, 
+				const std::string&, 
+				const std::string&,
+				const std::vector<std::string>&,
+				const std::vector<std::string>&,
+				std::pair<long double, long double>, 
+				long double,
+				long double,
+				long double, 
+				size_t,
+				size_t>(), 
+				py::arg("q"),
+				py::arg("k"),
+				py::arg("f"),
+				py::arg("phi"),
+				py::arg("left_coefficients"),
+				py::arg("right_coefficients"),
+				py::arg("space_interval"),
+				py::arg("T"),
+				py::arg("h"),
+				py::arg("tau"),
+				py::arg("rarefaction_ratio_x"),
+				py::arg("rarefaction_ratio_t"))
+			.def("GetXs", &DynS::ParabolicPartialDifferentialEquation::GetXs, "Gets x coordinates of matrix")
+			.def("GetTs", &DynS::ParabolicPartialDifferentialEquation::GetTs, "Gets t coordinates of matrix")
+			.def("Solution", &DynS::ParabolicPartialDifferentialEquation::Solution, "Returns matrix of solution by an implicit second-order method");
+
+		py::class_<DynS::SecondOrderODESolver>(
+			module_handle, "SecondOrderODESolver"
+			).def(py::init<std::vector<std::pair<std::string, std::string>>, Eigen::Matrix<double, 2, 3>, std::pair<double, double>, size_t>())
+			.def("GetConditionNumber", &DynS::SecondOrderODESolver::GetConditionNumber, "Returns condition number of matrix for solving ODE")
+			.def("GetSolution", &DynS::SecondOrderODESolver::GetSolution, "Returns Y - approximation of the solution on a grid")
+			.def("GetMatrixForSolution", &DynS::SecondOrderODESolver::GetMatrixA, "Returns matrix for solving ODE");
+
+	}
+
+#endif // !_DEBUG
