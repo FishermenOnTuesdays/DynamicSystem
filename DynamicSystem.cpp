@@ -1557,9 +1557,9 @@ namespace DynS
 		
 		module_handle.doc() = "Numerical Solvers library. Created in MEPhI in 2022";
 		
-		// module_handle.def("GetMapLyapunovExponents", &DynS::GetMapLyapunovExponents, "Returns a map of Lyapunov exponents this dynamic system");
-		// module_handle.def("GetBifurcationMap", &DynS::GetBifurcationMap, "Returns Bifurcation map from input trajectory", py::arg("trajectory"));
-		// module_handle.def("GetPoincareMap", &DynS::GetPoincareMap, "Returns Poincare map from input trajectory", py::arg("planeEquation"), py::arg("trajectory"));
+		module_handle.def("GetMapLyapunovExponents", &DynS::GetMapLyapunovExponents, "Returns a map of Lyapunov exponents this dynamic system");
+		module_handle.def("GetBifurcationMap", &DynS::GetBifurcationMap, "Returns Bifurcation map from input trajectory", "starting_point"_a, "strings_functions"_a, "variables"_a, "additional_variables"_a, "time"_a, "dt"_a, "parameter"_a, "parameter_range"_a, "step"_a);
+		module_handle.def("GetPoincareMap", &DynS::GetPoincareMap, "Returns Poincare map from input trajectory", "planeEquation"_a, "trajectory"_a);
 
 		py::class_<DynS::DynamicSystem> clsDynamicSystem(module_handle, "DynamicSystem");
 		
