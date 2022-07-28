@@ -147,8 +147,8 @@ namespace DynS
 		Eigen::Vector3ld intersectionPoint;
 		int prevsign;
 		int sign;
-		point = trajectory[0];
-		prevsign = SideSign(planeEquation, point);
+		prevpoint = trajectory[0];
+		prevsign = SideSign(planeEquation, prevpoint);
 
 		int N = trajectory.size();
 		for (int i = 1; i < N; i++) {
@@ -287,7 +287,9 @@ namespace DynS
 			//long double intersectionPoint1;
 			int prevsign;
 			int sign;
-			prevsign = SideSign(planeEquation, point);
+			// prevsign = SideSign(planeEquation, point);
+			prevpoint = trajectory[0];
+			prevsign = SideSign(planeEquation, prevpoint);
 
 			int N = trajectory.size();
 			for (int i = 1; i < N; i++) {
@@ -529,7 +531,9 @@ namespace DynS
 		Eigen::Vector3ld intersectionPoint;
 		int prevsign;
 		int sign;
-		prevsign = SideSign(planeEquation, point);
+		// prevsign = SideSign(planeEquation, point);
+		prevpoint = trajectory[0];
+		prevsign = SideSign(planeEquation, prevpoint);
 
 		int N = data.size();
 		for (int i = 1; i < N; i++) {  
