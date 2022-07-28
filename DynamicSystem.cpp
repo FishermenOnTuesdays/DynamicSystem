@@ -147,6 +147,7 @@ namespace DynS
 		Eigen::Vector3ld intersectionPoint;
 		int prevsign;
 		int sign;
+		point = trajectory[0];
 		prevsign = SideSign(planeEquation, point);
 
 		int N = trajectory.size();
