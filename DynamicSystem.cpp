@@ -1604,6 +1604,32 @@ namespace DynS
 		
 		py::enum_<DynS::DynamicSystem::ImplicitNumericalMethod>(clsDynamicSystem, "ImplicitNumericalMethod")
 			.value("EulerImplicit", DynS::DynamicSystem::ImplicitNumericalMethod::EulerImplicit);
+		
+		
+		// PartialDifferentialEquation
+		py::class_<DynS::PartialDifferentialEquation>(
+			module_handle, "PartialDifferentialEquation"
+			).def(
+				py::init<
+					const std::vector<std::string>&, 
+					long double, 
+					long double, 
+					long double, 
+					const std::vector<std::string>&, 
+					std::string, 
+					std::string, 
+					long double
+				>(),
+				"strings_boundary_functions"_a,
+				"first_value_parameter"_a,
+				"second_value_parameter"_a,
+				"step_along_border"_a,
+				"strings_functions_coefficients"_a,
+				"variables"_a="",
+				"additional_variables"_a="",
+				"dt"_a=0.01)
+			.def("GetTimeSequence", &DynS::PartialDifferentialEquation::GetTimeSequence, "Gets time sequence of solution")
+			.def("GetSolution", &DynS::PartialDifferentialEquation::GetSolution, "Returns solution of partial differential equation", "time"_a);		
 
 		py::class_<DynS::HyperbolicPartialDifferentialEquation>(
 			module_handle, "HyperbolicPartialDifferentialEquation"
